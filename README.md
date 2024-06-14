@@ -12,6 +12,7 @@
       - [Pipeline](#pipeline)
       - [Visualization](#visualization)
     - [Dig deeper](#dig-deeper)
+  - [Quick start](#quick-start-1)
 
 
 ## Overview
@@ -74,6 +75,8 @@ Visualize:
 ```python
 lazy_pipe.visualize(simple_pipeline)
 ```
+![png](resources/tutorial_7_0.png)
+
 
 Run whole pipeline
 ```
@@ -84,7 +87,6 @@ simple_pipeline.run()
 [1]
 ```
     
-![png](resources/tutorial_7_0.png)
     
 
 
@@ -306,43 +308,3 @@ pipeline.run()
 Create pipeline task with task decorators:
 ```python
 import lazy_pipe
-
-
-@lazy_pipe.task
-def run_a(param):
-    return f"Output of A with {param}"
-
-@lazy_pipe.task
-def run_b(a):
-    return f"Output of B with {a}"
-
-@lazy_pipe.task
-def run_c(b):
-    return f"Output of C with {b}"
-```
-
-Link them:
-```python
-a = run_a(param="Initial input for A")
-b = run_b(a)
-c = run_c(b)
-```
-
-Define pipeline:
-```
-simple_pipeline = lazy_pipe.Pipeline(
-  input=a,
-  outputs=[c]
-)
-```
-Visualize:
-```python
-lazy_pipe.visualize(simple_pipeline)
-```
-![simple pipeline](resources/simple_pipeline.png)
-
-
-Run the flow:
-```python
-simple_pipeline.run()
-``` -->
