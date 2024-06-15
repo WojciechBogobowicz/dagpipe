@@ -1,7 +1,7 @@
-# Lazy Pipe
+# dagpipe
 
 ## TOC
-- [Lazy Pipe](#lazy-pipe)
+- [dagpipe](#dagpipe)
   - [TOC](#toc)
   - [Overview](#overview)
   - [Setup](#setup)
@@ -17,7 +17,7 @@
 
 ## Overview
 
-Package that allows user to define lazy evaluated pipeline.
+Package that allows user to define lazy evaluated DAG (directed acyclic graph) pipeline.
 
 ## Setup
 1. This library use Graphviz library for visualization. If you want to plot created pipes, [install it on your computer](https://graphviz.org/download/). If not, rest of the functionalities works without it.

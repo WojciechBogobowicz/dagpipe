@@ -11,7 +11,7 @@ setup(
     version="0.1.0",
     author="Wojciech Bogobowicz",
     author_email="wojciech.bogobowicz@gmail.com",
-    description="Package that allows user to define lazy evaluated pipeline.",
+    description="Package that allows user to define lazy evaluated dag pipeline.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/WojciechBogobowicz/dagpipe",
