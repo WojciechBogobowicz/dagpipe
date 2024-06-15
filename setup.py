@@ -7,18 +7,18 @@ this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
 setup(
-    name="lazy_pipe",
+    name="dagpipe",
     version="0.1.0",
     author="Wojciech Bogobowicz",
     author_email="wojciech.bogobowicz@gmail.com",
     description="Package that allows user to define lazy evaluated pipeline.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/WojciechBogobowicz/lazy_pipe",
+    url="https://github.com/WojciechBogobowicz/dagpipe",
     packages=find_packages(exclude=['notebooks']),
     include_package_data=True,
     package_data={
-        'lazy_pipe': ['resources/*.png'],
+        'dagpipe': ['resources/*.png'],
     },
     install_requires=[],
     extras_require={

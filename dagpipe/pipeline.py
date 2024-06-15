@@ -7,7 +7,7 @@ Classes:
 """
 
 
-from lazy_pipe.task_core import Task
+from dagpipe.task_core import Task
 
 
 class Pipeline:

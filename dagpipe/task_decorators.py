@@ -11,7 +11,7 @@ Functions:
 import functools
 import inspect
 
-from lazy_pipe.task_core import Task, MethodTask
+from dagpipe.task_core import Task, MethodTask
 
 
 def task(func) -> callable:

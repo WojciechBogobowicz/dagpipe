@@ -23,11 +23,11 @@ Package that allows user to define lazy evaluated pipeline.
 1. This library use Graphviz library for visualization. If you want to plot created pipes, [install it on your computer](https://graphviz.org/download/). If not, rest of the functionalities works without it.
 2. Install package via pip with visualization (note: you still have to do step 1):
 ```
-pip install lazy_pipe[viz]
+pip install dagpipe[viz]
 ```
 or without it (that version is written in pure python so no additional dependencies would be added during installation process)
 ```
-pip install lazy_pipe
+pip install dagpipe
 ```
 
 ## Tutorial
@@ -36,18 +36,18 @@ Create pipeline task with task decorators:
 
 
 ```python
-import lazy_pipe
+import dagpipe
 
 
-@lazy_pipe.task
+@dagpipe.task
 def run_a(param):
     return f"Output of A with {param}"
 
-@lazy_pipe.task
+@dagpipe.task
 def run_b(a):
     return f"Output of B with {a}"
 
-@lazy_pipe.task
+@dagpipe.task
 def run_c(b):
     return f"Output of C with {b}"
 ```
@@ -65,7 +65,7 @@ Define pipeline:
 
 
 ```
-simple_pipeline = lazy_pipe.Pipeline(
+simple_pipeline = dagpipe.Pipeline(
   input=a,
   outputs=[c]
 )
@@ -78,7 +78,7 @@ Visualize:
 
 
 ```python
-lazy_pipe.visualize(simple_pipeline)
+dagpipe.visualize(simple_pipeline)
 ```
 ![png](resources/tutorial_7_0.png)
 
@@ -103,19 +103,19 @@ Two types of tasks are supported:
 
 
 ```python
-@lazy_pipe.task
+@dagpipe.task
 def A(param):
     return f"Output of A with {param}"
 
-@lazy_pipe.task
+@dagpipe.task
 def B(a):
     return f"Output of B with {a}"
 
-@lazy_pipe.task
+@dagpipe.task
 def C(b):
     return f"Output of C with {b}"
 
-@lazy_pipe.task
+@dagpipe.task
 def D(a, c):
     return f"Output of D with {a} and {c}"
 ```
@@ -125,19 +125,19 @@ def D(a, c):
 
 ```python
 class ExampleClass:
-    @lazy_pipe.method_task
+    @dagpipe.method_task
     def E(self, d):
         return f"Output of E with {d}"
 
-    @lazy_pipe.method_task
+    @dagpipe.method_task
     def F(self, e):
         return f"Output of F with {e}"
 
-    @lazy_pipe.method_task
+    @dagpipe.method_task
     def G(self, inp):
         return f"Output of G with {inp}"
 
-    @lazy_pipe.method_task
+    @dagpipe.method_task
     def __call__(self, inp):
         return f"Output from Exampleclass with {inp}"
 ```
@@ -168,7 +168,7 @@ You can define as many output as you want, but only one input.
 
 
 ```python
-pipeline = lazy_pipe.Pipeline(input=a, outputs=[f, ec])
+pipeline = dagpipe.Pipeline(input=a, outputs=[f, ec])
 ```
 
 You can run the same pipeline with different parameters. Your result would be a list with values for each defined output.
@@ -206,7 +206,7 @@ print(result)
 
 `visualize` function create `matplotlib` plot that you can customize.  
 
-Alternatively you can save visualization fo file instead of plotting, by specifying parameter to_file: `lazy_pipe.visualize(pipeline, to_file="path/to/file")`
+Alternatively you can save visualization fo file instead of plotting, by specifying parameter to_file: `dagpipe.visualize(pipeline, to_file="path/to/file")`
 
 
 Tasks are named with theirs functions names. Method tasks like `ClassName.function_name`, but there is one special case: `__call__` method is named only with class name.
@@ -217,7 +217,7 @@ Tasks are named with theirs functions names. Method tasks like `ClassName.functi
 import matplotlib.pyplot as plt
 
 
-lazy_pipe.visualize(pipeline)
+dagpipe.visualize(pipeline)
 plt.gcf().set_size_inches(4, 6)
 ```
 
@@ -229,11 +229,11 @@ plt.gcf().set_size_inches(4, 6)
 
 
 ### Dig deeper 
-`lazy_pipe.task` decorator change function behavior in a way that when it is called it saves base function with its arguments to `Task` object instead of calling it. 
+`dagpipe.task` decorator change function behavior in a way that when it is called it saves base function with its arguments to `Task` object instead of calling it. 
 
 
 ```python
-@lazy_pipe.task
+@dagpipe.task
 def foo(x):
   return x
 
@@ -244,7 +244,7 @@ print(f"x type after  foo processing - {type(x)}")
 ```
 
     x type before foo processing - <class 'int'>
-    x type after  foo processing - <class 'lazy_pipe.task_core.Task'>
+    x type after  foo processing - <class 'dagpipe.task_core.Task'>
     
 
 You can check values that are stored by Task x:
@@ -279,7 +279,7 @@ Task stores information about input arguments that that are provided to it, so w
 
 
 ```python
-@lazy_pipe.task
+@dagpipe.task
 def foo2(x):
   return x
 
@@ -290,14 +290,14 @@ x2 = foo2(x)
 print(f"input arg for x2 is '{x2.args[0]}' which type is {type(x2.args[0])}")
 ```
 
-    input arg for x2 is 'foo' which type is <class 'lazy_pipe.task_core.Task'>
+    input arg for x2 is 'foo' which type is <class 'dagpipe.task_core.Task'>
     
 
-Basically tuple (*task*, *task argument*) is edge of directional computing graph. `lazy_pipe.Pipeline` collect information about all edges, and sort them in right execution order. After that you can run whole pipeline. 
+Basically tuple (*task*, *task argument*) is edge of directional computing graph. `dagpipe.Pipeline` collect information about all edges, and sort them in right execution order. After that you can run whole pipeline. 
 
 
 ```python
-pipeline = lazy_pipe.Pipeline(input=x, outputs=[x2])
+pipeline = dagpipe.Pipeline(input=x, outputs=[x2])
 pipeline.run()
 ```
 
@@ -312,4 +312,4 @@ pipeline.run()
 ## Quick start
 Create pipeline task with task decorators:
 ```python
-import lazy_pipe
+import dagpipe

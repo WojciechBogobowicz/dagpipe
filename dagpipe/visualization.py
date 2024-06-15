@@ -14,8 +14,8 @@ import tempfile
 import graphviz
 from matplotlib import pyplot as plt
 
-from lazy_pipe.task_core import Task
-from lazy_pipe.pipeline import Pipeline
+from dagpipe.task_core import Task
+from dagpipe.pipeline import Pipeline
 
 
 def visualize(pipeline: Pipeline, to_file: str | None = None):
