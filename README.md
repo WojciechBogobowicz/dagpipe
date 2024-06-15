@@ -21,10 +21,15 @@ Package that allows user to define lazy evaluated pipeline.
 
 ## Setup
 1. This library use Graphviz library for visualization. If you want to plot created pipes, [install it on your computer](https://graphviz.org/download/). If not, rest of the functionalities works without it.
-2. Install package via pip:
+2. Install package via pip with visualization (note: you still have to do step 1):
+```
+pip install lazy_pipe[viz]
+```
+or without it (that version is written in pure python so no additional dependencies would be added during installation process)
 ```
 pip install lazy_pipe
 ```
+
 ## Tutorial
 ### Quick start
 Create pipeline task with task decorators:
