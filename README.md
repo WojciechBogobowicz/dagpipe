@@ -14,6 +14,7 @@
 
 
 ## Overview
+*dagpipe - ducktape on your data flow!*
 
 Package that allows user to define lazy evaluated DAG (directed acyclic graph) pipeline.
 
@@ -78,8 +79,7 @@ Visualize:
 ```python
 dagpipe.visualize(simple_pipeline)
 ```
-![png](resources/tutorial_7_0.png)
-
+![png](https://raw.githubusercontent.com/WojciechBogobowicz/dagpipe/master/resources/tutorial_7_0.png)
 
 Run whole pipeline
 ```
@@ -221,7 +221,7 @@ plt.gcf().set_size_inches(4, 6)
 
 
     
-![png](resources/tutorial_22_0.png)
+![png](https://raw.githubusercontent.com/WojciechBogobowicz/dagpipe/master/resources/tutorial_22_0.png)
     
 
 
