@@ -31,3 +31,6 @@ setup(
     ],
     python_requires='>=3.6',
 )
+
+# run setup
+# python setup.py sdist bdist_wheel
