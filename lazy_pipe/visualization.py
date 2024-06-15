@@ -57,3 +57,4 @@ def _build_graph(pipeline):
             if isinstance(arg, Task):
                 dot.edge(str(id(arg)), str(id(task)))
     return dot
+
