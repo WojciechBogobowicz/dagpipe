@@ -1,18 +1,16 @@
-# dagpipe
+# dagpipe <!-- omit from toc --> 
 
-## TOC
-- [dagpipe](#dagpipe)
-  - [TOC](#toc)
-  - [Overview](#overview)
-  - [Setup](#setup)
-  - [Tutorial](#tutorial)
-    - [Quick start](#quick-start)
-    - [Functionality overview](#functionality-overview)
-      - [Task](#task)
-      - [Pipeline](#pipeline)
-      - [Visualization](#visualization)
-    - [Dig deeper](#dig-deeper)
-  - [Quick start](#quick-start-1)
+
+## TOC <!-- omit from toc --> 
+- [Overview](#overview)
+- [Setup](#setup)
+- [Tutorial](#tutorial)
+  - [Quick start](#quick-start)
+  - [Functionality overview](#functionality-overview)
+    - [Task](#task)
+    - [Pipeline](#pipeline)
+    - [Visualization](#visualization)
+  - [Dig deeper](#dig-deeper)
 
 
 ## Overview
@@ -89,7 +87,7 @@ simple_pipeline.run()
 ```
 
 ```
-[1]
+['Output of C with Output of B with Output of A with Initial input for A']
 ```
     
     
@@ -308,8 +306,3 @@ pipeline.run()
 
 
 
-<!-- 
-## Quick start
-Create pipeline task with task decorators:
-```python
-import dagpipe
