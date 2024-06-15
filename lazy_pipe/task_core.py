@@ -1,3 +1,12 @@
+"""
+This module defines the Task and MethodTask classes used to represent and manage tasks.
+
+Classes:
+    Task: A class representing a task that postpone function execution
+    with given parameters.
+    MethodTask: Similar to task, but works with class methods.
+"""
+
 from typing import Any
 
 
