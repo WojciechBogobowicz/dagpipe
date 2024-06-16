@@ -22,18 +22,20 @@ class Task:
         kwargs (dict): The keyword arguments to be passed to the function.
         evaluated_result (Any): The result of the function execution.
     """
-    def __init__(self, func, *args, **kwargs):
+    def __init__(self, func, *args, name="auto",  **kwargs):
         """
         Initialize a Task instance.
 
         Args:
             func (callable): The function to be executed.
+            name (str, optional): Name that would be displayed in visualization.
             *args: Positional arguments to be passed to the function.
             **kwargs: Keyword arguments to be passed to the function.
         """
         self.func = func
         self.args = args
         self.kwargs = kwargs
+        self.name = name if name != "auto" else repr(self)
         self.evaluated_result = None
 
     def run(self, *args, **kwargs) -> Any:
@@ -99,7 +101,7 @@ class MethodTask(Task):
         instance (Any): The instance on which the method will be executed.
     """
 
-    def __init__(self, instance, func, *args, **kwargs):
+    def __init__(self, instance, func, *args, name="auto", **kwargs):
         """
         Initialize a MethodTask instance.
 
@@ -109,8 +111,8 @@ class MethodTask(Task):
             *args: Positional arguments to be passed to the method.
             **kwargs: Keyword arguments to be passed to the method.
         """
-        super().__init__(func, *args, **kwargs)
         self.instance = instance
+        super().__init__(func, *args, name=name, **kwargs)
 
     def evaluate_result(self, *args, **kwargs) -> Any:
         """

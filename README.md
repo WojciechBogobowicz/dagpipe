@@ -38,15 +38,15 @@ Create pipeline task with task decorators:
 import dagpipe
 
 
-@dagpipe.task
+@dagpipe.task()
 def run_a(param):
     return f"Output of A with {param}"
 
-@dagpipe.task
+@dagpipe.task()
 def run_b(a):
     return f"Output of B with {a}"
 
-@dagpipe.task
+@dagpipe.task()
 def run_c(b):
     return f"Output of C with {b}"
 ```
@@ -86,9 +86,7 @@ Run whole pipeline
 simple_pipeline.run()
 ```
 
-```
-['Output of C with Output of B with Output of A with Initial input for A']
-```
+    >>>> ['Output of C with Output of B with Output of A with Initial input for A']
     
     
 
@@ -101,19 +99,19 @@ Two types of tasks are supported:
 
 
 ```python
-@dagpipe.task
+@dagpipe.task()
 def A(param):
     return f"Output of A with {param}"
 
-@dagpipe.task
+@dagpipe.task()
 def B(a):
     return f"Output of B with {a}"
 
-@dagpipe.task
+@dagpipe.task()
 def C(b):
     return f"Output of C with {b}"
 
-@dagpipe.task
+@dagpipe.task()
 def D(a, c):
     return f"Output of D with {a} and {c}"
 ```
@@ -123,19 +121,19 @@ def D(a, c):
 
 ```python
 class ExampleClass:
-    @dagpipe.method_task
+    @dagpipe.method_task()
     def E(self, d):
         return f"Output of E with {d}"
 
-    @dagpipe.method_task
+    @dagpipe.method_task()
     def F(self, e):
         return f"Output of F with {e}"
 
-    @dagpipe.method_task
+    @dagpipe.method_task()
     def G(self, inp):
         return f"Output of G with {inp}"
 
-    @dagpipe.method_task
+    @dagpipe.method_task()
     def __call__(self, inp):
         return f"Output from Exampleclass with {inp}"
 ```
@@ -181,13 +179,12 @@ print(new_result)
 
 new_result2 = pipeline.run(param="@@ New input for A @@")
 print(new_result2)
-
 ```
+    >>>> ['Output of F with Output of E with Output of D with Output of A with Initial input for A and Output of C with Output of B with Output of A with Initial input for A', 'Output from Exampleclass with Output of G with Output of C with Output of B with Output of A with Initial input for A']
 
-    ['Output of F with Output of E with Output of D with Output of A with Initial input for A and Output of C with Output of B with Output of A with Initial input for A', 'Output from Exampleclass with Output of G with Output of C with Output of B with Output of A with Initial input for A']
-    ['Output of F with Output of E with Output of D with Output of A with ## New input for A ## and Output of C with Output of B with Output of A with ## New input for A ##', 'Output from Exampleclass with Output of G with Output of C with Output of B with Output of A with ## New input for A ##']
-    ['Output of F with Output of E with Output of D with Output of A with @@ New input for A @@ and Output of C with Output of B with Output of A with @@ New input for A @@', 'Output from Exampleclass with Output of G with Output of C with Output of B with Output of A with @@ New input for A @@']
-    
+    >>>> ['Output of F with Output of E with Output of D with Output of A with ## New input for A ## and Output of C with Output of B with Output of A with ## New input for A ##', 'Output from Exampleclass with Output of G with Output of C with Output of B with Output of A with ## New input for A ##']
+
+    >>>> ['Output of F with Output of E with Output of D with Output of A with @@ New input for A @@ and Output of C with Output of B with Output of A with @@ New input for A @@', 'Output from Exampleclass with Output of G with Output of C with Output of B with Output of A with @@ New input for A @@']
 
 But be aware, that when you run it again without parameters it will use last defined parameter
 
@@ -197,8 +194,7 @@ result = pipeline.run()
 print(result)
 ```
 
-    ['Output of F with Output of E with Output of D with Output of A with @@ New input for A @@ and Output of C with Output of B with Output of A with @@ New input for A @@', 'Output from Exampleclass with Output of G with Output of C with Output of B with Output of A with @@ New input for A @@']
-    
+    >>>> ['Output of F with Output of E with Output of D with Output of A with @@ New input for A @@ and Output of C with Output of B with Output of A with @@ New input for A @@', 'Output from Exampleclass with Output of G with Output of C with Output of B with Output of A with @@ New input for A @@'] 
 
 #### Visualization
 
@@ -208,7 +204,6 @@ Alternatively you can save visualization fo file instead of plotting, by specify
 
 
 Tasks are named with theirs functions names. Method tasks like `ClassName.function_name`, but there is one special case: `__call__` method is named only with class name.
-  
 
 
 ```python
@@ -222,6 +217,15 @@ plt.gcf().set_size_inches(4, 6)
 
     
 ![png](https://raw.githubusercontent.com/WojciechBogobowicz/dagpipe/master/resources/tutorial_22_0.png)
+
+
+You can change displaying name in visualization in decorator Task instance name property (eg `a.name = "AAA"`). 
+
+```python
+pipeline.tasks[0].name = "AAA"
+dagpipe.visualize(pipeline)
+```
+![png](https://raw.githubusercontent.com/WojciechBogobowicz/dagpipe/master/resources/tutorial_20_0.png)
     
 
 
@@ -241,8 +245,8 @@ x = foo(x)
 print(f"x type after  foo processing - {type(x)}")
 ```
 
-    x type before foo processing - <class 'int'>
-    x type after  foo processing - <class 'dagpipe.task_core.Task'>
+    >>>> x type before foo processing - <class 'int'>
+    >>>> x type after  foo processing - <class 'dagpipe.task_core.Task'>
     
 
 You can check values that are stored by Task x:

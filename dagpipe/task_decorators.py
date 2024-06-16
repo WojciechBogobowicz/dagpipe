@@ -14,35 +14,39 @@ import inspect
 from dagpipe.task_core import Task, MethodTask
 
 
-def task(func) -> callable:
+def task(name="auto") -> callable:
     """
     A decorator that wraps a function in a Task instance.
     Task postpone function execution, 
     to the moment when its 'run' method is called.
 
     Args:
-        func (callable): The function to be wrapped.
+        name (str, optional): Name used in visualization.
 
     Returns:
         callable: A wrapped function that returns a Task instance.
     """
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        return Task(func, *args, **kwargs)
-    return wrapper
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            return Task(func, *args, name=name, **kwargs)
+        return wrapper
+    return decorator
 
 
-def method_task(method) -> callable:
+def method_task(name="auto") -> callable:
     """
     Similar to 'task' but works with class method instead of standalone functions. 
 
     Args:
-        method (callable): The method to be wrapped.
+        name (str, optional): Name used in visualization.
 
     Returns:
         callable: A wrapped method that returns a MethodTask instance.
     """
-    @functools.wraps(method)
-    def wrapper(instance, *args, **kwargs):
-        return MethodTask(instance, method, *args, **kwargs)
-    return wrapper
+    def decorator(method):
+        @functools.wraps(method)
+        def wrapper(instance, *args, **kwargs):
+            return MethodTask(instance, method, *args, name=name, **kwargs)
+        return wrapper
+    return decorator

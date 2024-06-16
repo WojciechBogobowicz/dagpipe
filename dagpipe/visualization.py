@@ -52,7 +52,8 @@ def _build_graph(pipeline):
     """
     dot = graphviz.Digraph(format='png')
     for task in pipeline.tasks:
-        dot.node(str(id(task)), repr(task))
+        # dot.node(str(id(task)), repr(task))
+        dot.node(str(id(task)), task.name)
         for arg in task.args + tuple(task.kwargs.values()):
             if isinstance(arg, Task):
                 dot.edge(str(id(arg)), str(id(task)))

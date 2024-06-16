@@ -8,7 +8,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name="dagpipe",
-    version="0.1.0",
+    version="0.1.01",
     author="Wojciech Bogobowicz",
     author_email="wojciech.bogobowicz@gmail.com",
     description="Package that allows user to define lazy evaluated dag pipeline.",
@@ -34,3 +34,4 @@ setup(
 
 # run setup
 # python setup.py sdist bdist_wheel
+# twine upload dist/*
