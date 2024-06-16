@@ -16,10 +16,10 @@
 ## Overview
 *dagpipe - ducktape on your data flow!*
 
-Package that allows user to define lazy evaluated DAG (directed acyclic graph) pipeline.
+Package that allows the user to define lazily evaluated DAG (directed acyclic graph) pipeline.
 
 ## Setup
-1. This library use Graphviz library for visualization. If you want to plot created pipes, [install it on your computer](https://graphviz.org/download/). If not, rest of the functionalities works without it.
+1. This library uses Graphviz library for visualization. If you want to plot created pipes, [install it on your computer](https://graphviz.org/download/). If not, rest of the functionalities works without it.
 2. Install package via pip with visualization (note: you still have to do step 1):
 ```
 pip install dagpipe[viz]
@@ -81,7 +81,7 @@ dagpipe.visualize(simple_pipeline)
 ```
 ![png](https://raw.githubusercontent.com/WojciechBogobowicz/dagpipe/master/resources/tutorial_7_0.png)
 
-Run whole pipeline
+Run the whole pipeline
 ```
 simple_pipeline.run()
 ```
@@ -140,8 +140,8 @@ class ExampleClass:
 
 Tasks flow is defined in very intuitive way (like normal functions execution).  
 Note that:
-1. You can mix in single pipeline tasks with methods tasks.
-2. You can put more tasks to single task (like in d task)  
+1. You can mix tasks and method tasks in a single pipeline.
+2. You can use more than one task as an input to single task (as shown for d task).  
 
 
 ```python
@@ -158,8 +158,8 @@ ec = example(g)
 ```
 
 #### Pipeline
-To define pipeline simply pass input and outputs to Pipeline.  
-You can define as many output as you want, but only one input.
+To define a pipeline simply pass input and outputs to the Pipeline.  
+You can define as many outputs as you want, but only one input.
 
 
 
@@ -198,7 +198,7 @@ print(result)
 
 #### Visualization
 
-`visualize` function create `matplotlib` plot that you can customize.  
+`visualize` function creates `matplotlib` plot that you can customize.  
 
 Alternatively you can save visualization fo file instead of plotting, by specifying parameter to_file: `dagpipe.visualize(pipeline, to_file="path/to/file")`
 
@@ -231,7 +231,7 @@ dagpipe.visualize(pipeline)
 
 
 ### Dig deeper 
-`dagpipe.task` decorator change function behavior in a way that when it is called it saves base function with its arguments to `Task` object instead of calling it. 
+`dagpipe.task` decorator changes function behavior so that when it is called it saves the base function with its arguments to `Task` object instead of calling it. 
 
 
 ```python
@@ -263,7 +263,7 @@ print("Stored kwargs: \t", x.kwargs)
     Stored kwargs: 	 {}
     
 
-If you want run stored function, it is possible with `run` method, but normally `Pipeline` object would do it for you.
+If you want to run stored function, it is possible with `run` method, but normally `Pipeline` object would do it for you.
 
 
 ```python
@@ -277,7 +277,7 @@ x.run()
 
 
 
-Task stores information about input arguments that that are provided to it, so when you put another Task as input to your task, it will have information about function that should be run before.  
+Task stores information about input arguments that that are provided to it, so when you put another Task as input to your task, it will have information about the function that should be run before.  
 
 
 ```python
@@ -295,7 +295,7 @@ print(f"input arg for x2 is '{x2.args[0]}' which type is {type(x2.args[0])}")
     input arg for x2 is 'foo' which type is <class 'dagpipe.task_core.Task'>
     
 
-Basically tuple (*task*, *task argument*) is edge of directional computing graph. `dagpipe.Pipeline` collect information about all edges, and sort them in right execution order. After that you can run whole pipeline. 
+Basically, the (*task*, *task argument*) tuple is an edge of directional computing graph. `dagpipe.Pipeline` collects information about all edges, and sorts them in right execution order. After that you can run whole pipeline. 
 
 
 ```python
