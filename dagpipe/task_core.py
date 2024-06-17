@@ -65,11 +65,12 @@ class Task:
         Update the initial arguments if new arguments are provided.
 
         Args:
-            *args: Totally replace currently stored args.
+            *args: Replace currently stored args starting from args beginning.
             **kwargs: Only update existing kwargs.
         """
-        if args or kwargs:
-            self.args = args if args else self.args
+        if args:
+            self.args = tuple([*args, *self.args[len(args):]])
+        if kwargs:
             self.kwargs.update(kwargs)
 
     def unpack_args_from_results(self) -> tuple[tuple, dict]:
