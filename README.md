@@ -10,6 +10,11 @@
     - [Task](#task)
     - [Pipeline](#pipeline)
     - [Visualization](#visualization)
+    - [Output split](#output-split)
+    - [Set name](#set-name)
+    - [Sequential pipe](#sequential-pipe)
+    - [conditional\_stops](#conditional_stops)
+    - [StoppingTaskHolder](#stoppingtaskholder)
   - [Dig deeper](#dig-deeper)
 
 
@@ -229,6 +234,141 @@ dagpipe.visualize(pipeline)
     
 
 
+#### Output split
+You have to specify `outputs_num` in Task decorator if you want to return more than one output
+
+
+```python
+from typing import Any
+
+@dagpipe.task()
+def do_nothing(inp):
+    return inp
+
+@dagpipe.task(outputs_num=2)
+def split(inp):
+    print("runnin")
+    return inp[0], inp[1]
+
+@dagpipe.task()
+def duplicate(inp):
+    return inp*2
+
+@dagpipe.task()
+def concat(inp1, inp2):
+    return inp1 + inp2
+
+x1 = do_nothing(Any)
+x2, x3 = split(x1)
+x5 = duplicate(x3)
+x6 = concat(x2, x5)
+
+p = dagpipe.Pipeline(x1, [x6])
+
+dagpipe.visualize(p)
+p.run(["*first element*", "@second element@"])
+```
+
+    >>>> runnin
+    >>>> ['*first element*@second element@@second element@']
+
+
+
+
+    
+![png](https://raw.githubusercontent.com/WojciechBogobowicz/dagpipe/master/resources/tutorial_files/tutorial_27_2.png)
+    
+
+
+#### Set name
+you can set name during flow definition with `set_name` Task method. If you need to name more than one task, just pass list of names.
+
+
+```python
+x1 = do_nothing(Any).set_name("Input Node")
+x2, x3 = split(x1).set_name(["Split - left side", "Split - right side"])
+x5 = duplicate(x3)
+x6 = concat(x2, x5)
+
+p = dagpipe.Pipeline(x1, [x6])
+
+dagpipe.visualize(p)
+```
+
+
+    
+![png](https://raw.githubusercontent.com/WojciechBogobowicz/dagpipe/master/resources/tutorial_files/tutorial_29_0.png)
+    
+
+
+#### Sequential pipe
+if your flow is really straightforward you can define it as `sequence`
+
+
+```python
+p = dagpipe.Pipeline.sequential([
+    do_nothing,
+    duplicate,
+    duplicate,
+])
+
+dagpipe.visualize(p)
+```
+
+
+    
+![png](https://raw.githubusercontent.com/WojciechBogobowicz/dagpipe/master/resources/tutorial_files/tutorial_31_0.png)
+    
+
+
+#### conditional_stops
+You can stop pipeline execution conditionally at any step if you specify `conditional_stops` argument in pipeline definition. It is a dict where key is `Task.name` and value is function that would take Task output and will convert it to boolean value. If True returned pipeline execution would be stopped and given task output returned with `StoppingTaskHolder` as second list element.
+
+
+```python
+
+```
+
+
+```python
+def is_string(x):
+    return isinstance(x, str)
+
+p = dagpipe.Pipeline.sequential(
+    tasks_sequence=[do_nothing, duplicate, duplicate],
+    conditional_stops={"do_nothing": is_string}
+)
+
+print("noramlr run", p.run(5))
+print("stopped run", p.run("5"))
+
+
+dagpipe.visualize(p)
+```
+
+    >>>> noramlr run [20]
+    >>>> stopped run ['5', STOPPED AT do_nothing]
+    
+
+
+    
+![png](https://raw.githubusercontent.com/WojciechBogobowicz/dagpipe/master/resources/tutorial_files/tutorial_34_1.png)
+    
+
+
+#### StoppingTaskHolder
+you can easily filter out runs that stopped early with `StoppingTaskHolder.in_` method. 
+
+
+```python
+outputs = p.run("5")
+if dagpipe.StoppingTaskHolder.in_(outputs):
+    print("wrong input format")
+```
+
+    >>>> wrong input format
+
+
 
 ### Dig deeper 
 `dagpipe.task` decorator changes function behavior so that when it is called it saves the base function with its arguments to `Task` object instead of calling it. 
@@ -269,9 +409,6 @@ If you want to run stored function, it is possible with `run` method, but normal
 ```python
 x.run()
 ```
-
-
-
 
     1
 

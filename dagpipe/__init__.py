@@ -13,6 +13,7 @@ Modules:
 """
 
 from dagpipe.task_decorators import task, method_task
+from dagpipe.task_core import StoppingTaskHolder
 from dagpipe.pipeline import Pipeline
 
 try:
