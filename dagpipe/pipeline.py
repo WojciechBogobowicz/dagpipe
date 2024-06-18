@@ -62,7 +62,12 @@ class Pipeline:
         for task in tasks_sequence:
             x = task(x)
         return cls(input, [x], conditional_stops)
-            
+
+    def __getitem__(self, name: str) -> Task:
+        for task in self.tasks:
+            if task.name == name:
+                return task
+        raise KeyError(f"Task with name {name} not found in self.tasks")
 
     def _gather_tasks(self) -> list[Task]:
         """
