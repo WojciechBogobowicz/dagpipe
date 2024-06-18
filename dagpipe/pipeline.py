@@ -81,7 +81,7 @@ class Pipeline:
                 for parent in current_task.args + tuple(current_task.kwargs.values()):
                     if isinstance(parent, Task):
                         stack.append(parent)
-                        children_num[repr(parent)] = children_num.get(repr(parent), 0) + 1
+                        children_num[id(parent)] = children_num.get(id(parent), 0) + 1
 
         tasks = []
         seen = set(self.outputs)
@@ -92,8 +92,8 @@ class Pipeline:
             seen.add(current_task)
             for parent in current_task.args + tuple(current_task.kwargs.values()):
                 if isinstance(parent, Task):
-                    children_num[repr(parent)] = children_num.get(repr(parent), 0) - 1
-                    if (children_num[repr(parent)] == 0): #and (parent not in seen):
+                    children_num[id(parent)] = children_num.get(id(parent), 0) - 1
+                    if (children_num[id(parent)] == 0): #and (parent not in seen):
                         stack.append(parent)
                         seen.add(parent)
 
