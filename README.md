@@ -276,7 +276,7 @@ p.run(["*first element*", "@second element@"])
 
 
     
-![png](https://raw.githubusercontent.com/WojciechBogobowicz/dagpipe/master/resources/tutorial_files/tutorial_27_2.png)
+![png](https://raw.githubusercontent.com/WojciechBogobowicz/dagpipe/master/resources/tutorial_27_2.png)
     
 
 
@@ -297,7 +297,7 @@ dagpipe.visualize(p)
 
 
     
-![png](https://raw.githubusercontent.com/WojciechBogobowicz/dagpipe/master/resources/tutorial_files/tutorial_29_0.png)
+![png](https://raw.githubusercontent.com/WojciechBogobowicz/dagpipe/master/resources/tutorial_29_0.png)
     
 
 
@@ -317,7 +317,7 @@ dagpipe.visualize(p)
 
 
     
-![png](https://raw.githubusercontent.com/WojciechBogobowicz/dagpipe/master/resources/tutorial_files/tutorial_31_0.png)
+![png](https://raw.githubusercontent.com/WojciechBogobowicz/dagpipe/master/resources/tutorial_31_0.png)
     
 
 
@@ -352,7 +352,7 @@ dagpipe.visualize(p)
 
 
     
-![png](https://raw.githubusercontent.com/WojciechBogobowicz/dagpipe/master/resources/tutorial_files/tutorial_34_1.png)
+![png](https://raw.githubusercontent.com/WojciechBogobowicz/dagpipe/master/resources/tutorial_34_1.png)
     
 
 
