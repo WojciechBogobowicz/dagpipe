@@ -10,11 +10,12 @@ Functions:
 
 import functools
 import inspect
+from typing import Any, Callable
 
 from dagpipe.task_core import Task, MethodTask
 
 
-def task(name="auto", outputs_num: int = 1) -> callable:
+def task(name="auto", outputs_num: int = 1) -> Callable[[Callable], Callable[[Any], Task]]:
     """
     A decorator that wraps a function in a Task instance.
     Task postpone function execution, 
@@ -35,7 +36,7 @@ def task(name="auto", outputs_num: int = 1) -> callable:
     return decorator
 
 
-def method_task(name="auto", outputs_num=1) -> callable:
+def method_task(name="auto", outputs_num=1) -> Callable[[Callable], Callable[[Any], MethodTask]]:
     """
     Similar to 'task' but works with class method instead of standalone functions. 
 
