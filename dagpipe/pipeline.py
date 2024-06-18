@@ -7,7 +7,9 @@ Classes:
 """
 
 
-from dagpipe.task_core import Task
+import inspect
+from typing import Any
+from dagpipe.task_core import Task, MethodTask
 
 
 class Pipeline:
@@ -31,6 +33,25 @@ class Pipeline:
         self.input: Task = input
         self.outputs: list[Task] = outputs
         self.tasks: list[Task] = self._gather_tasks()
+        
+    @classmethod
+    def sequential(cls, tasks_sequence: list):
+        """
+        Create a Pipeline instance where tasks are executed sequentially.
+
+        Args:
+            tasks_sequence (list): A list of tasks to be executed in sequence.
+
+        Returns:
+            Pipeline: A Pipeline instance with the tasks set to execute in sequence.
+        """
+        input_task = tasks_sequence.pop(0)
+        input = input_task(Any)
+        x = input
+        for task in tasks_sequence:
+            x = task(x)
+        return cls(input, [x])
+            
 
     def _gather_tasks(self) -> list[Task]:
         """
