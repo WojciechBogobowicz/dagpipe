@@ -14,7 +14,7 @@ import tempfile
 import graphviz
 from matplotlib import pyplot as plt
 
-from dagpipe.task_core import Task
+from dagpipe.task_core import Task, TaskReference
 from dagpipe.pipeline import Pipeline
 
 
@@ -39,7 +39,7 @@ def visualize(pipeline: Pipeline, to_file: str | None = None):
             plt.imshow(img)
             plt.axis("off")
 
-def _build_graph(pipeline):
+def _build_graph(pipeline : Pipeline):
     """
     Execute the pipeline of tasks with optional initial arguments.
 
@@ -50,12 +50,42 @@ def _build_graph(pipeline):
     Returns:
         list: The evaluated results of the output tasks.
     """
-    dot = graphviz.Digraph(format='png')
+    dot = graphviz.Digraph(strict=True, format='png')
     for task in pipeline.tasks:
-        # dot.node(str(id(task)), repr(task))
-        dot.node(str(id(task)), task.name)
-        for arg in task.args + tuple(task.kwargs.values()):
-            if isinstance(arg, Task):
-                dot.edge(str(id(arg)), str(id(task)))
+        if isinstance(task, TaskReference):
+            task = task.task
+        label = task.name
+        color="black"
+        if pipeline.conditional_stops:
+            if task.name in pipeline.conditional_stops:
+                stop = pipeline.conditional_stops[task.name]
+                label, color = __update_node_attrs_for_stop(stop, label)
+        dot.node(str(id(task)), label=label, color=color)
+        
+            
+    for task in pipeline.tasks:
+        if isinstance(task, TaskReference):
+            for arg in task.args + tuple(task.kwargs.values()):
+                if isinstance(arg, Task):
+                    dot.edge(str(id(arg)), str(id(task.task)))
+            
+        elif isinstance(task, Task):
+            for arg in task.args + tuple(task.kwargs.values()):
+                if isinstance(arg, TaskReference):
+                    dot.edge(str(id(arg.task)), str(id(task)), label=arg.name)
+                elif isinstance(arg, Task):
+                    dot.edge(str(id(arg)), str(id(task)))
+                
     return dot
+
+def __update_node_attrs_for_stop(stop, label):
+    if hasattr(stop, "name"):
+        stop_name = stop.name
+    elif hasattr(stop, "__name__"):
+        stop_name = stop.__name__
+    else:
+        stop_name = repr(stop)
+    color="red"
+    label = f"{label}\nstops if\n{stop_name}"
+    return label,color
 

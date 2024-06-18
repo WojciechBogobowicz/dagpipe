@@ -8,7 +8,7 @@ Classes:
 
 
 import inspect
-from typing import Any
+from typing import Any, Callable
 from dagpipe.task_core import Task, MethodTask
 
 
@@ -22,20 +22,31 @@ class Pipeline:
         outputs (list[Task]): The list of output tasks of the pipeline.
         tasks (list[Task]): The list of tasks in the order they should be executed.
     """
-    def __init__(self, input: Task, outputs: list[Task]):
+    def __init__(self, 
+                 input: Task, 
+                 outputs: list[Task], 
+                 conditional_stops: dict[str, Callable[[Any], bool]] = None):
         """
         Initialize a Pipeline instance.
 
         Args:
             input (Task): The initial task of the pipeline.
             outputs (list[Task]): The list of output tasks of the pipeline.
+            conditional_stops (dict, Optional): key - task name
+                function that would be evaluated on task output.
+                If it returns true, then pipeline execution would be early stopped.
         """
         self.input: Task = input
         self.outputs: list[Task] = outputs
         self.tasks: list[Task] = self._gather_tasks()
+        self.conditional_stops = conditional_stops
         
     @classmethod
-    def sequential(cls, tasks_sequence: list):
+    def sequential(
+            cls, 
+            tasks_sequence: list,
+            conditional_stops: dict[str, Callable[[Any], bool]] = None,
+        ):
         """
         Create a Pipeline instance where tasks are executed sequentially.
 
@@ -50,7 +61,7 @@ class Pipeline:
         x = input
         for task in tasks_sequence:
             x = task(x)
-        return cls(input, [x])
+        return cls(input, [x], conditional_stops)
             
 
     def _gather_tasks(self) -> list[Task]:
@@ -105,4 +116,8 @@ class Pipeline:
         self.input.update_args_if_provided(*args, **kwargs)
         for task in self.tasks:
             task.run()
+            if self.conditional_stops:
+                if (task.name in self.conditional_stops):
+                    if self.conditional_stops[task.name](task.evaluated_result):
+                        return [task.evaluated_result, (task.to_stopping_holder())]
         return [output.evaluated_result for output in self.outputs]

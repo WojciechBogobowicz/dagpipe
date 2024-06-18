@@ -136,6 +136,10 @@ class Task:
             for ref, name in zip(self, name):
                 ref.name = name
         return self
+    
+    def to_stopping_holder(self):
+        """Returns holder for task."""
+        return StoppingTaskHolder(self)
         
 
     def __repr__(self) -> str:
@@ -252,3 +256,27 @@ class TaskReference(Task):
             str: *task*-ref[*id*].
         """
         return f"{repr(self.task)}-ref[{self.ref_index}]"
+
+
+class StoppingTaskHolder:
+    """
+    A class that wraps a task to indicate that it has been stopped.
+
+    Attributes:
+        task (Task): The task that is being held and marked as stopped.
+    """
+    def __init__(self, task: Task):
+        """
+        Initialize a StoppingTaskHolder instance.
+
+        Args:
+            task (Task): The task to be held and marked as stopped.
+        """
+        self.task = task
+    
+    @classmethod
+    def in_(self, collection: Iterable):
+        return any([isinstance(elem, StoppingTaskHolder) for elem in collection])
+
+    def __repr__(self) -> str:
+        return "STOPPED AT " + self.task.__repr__()
