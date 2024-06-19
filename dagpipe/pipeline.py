@@ -6,10 +6,9 @@ Classes:
     Pipeline: A class representing a pipeline of tasks to be executed in order.
 """
 
-
-import inspect
+import re
 from typing import Any, Callable
-from dagpipe.task_core import Task, MethodTask
+from dagpipe.task_core import Task
 
 
 class Pipeline:
@@ -64,6 +63,9 @@ class Pipeline:
         return cls(input, [x], conditional_stops)
 
     def __getitem__(self, name: str) -> Task:
+        repr_format_match = re.search(r"^.*Task.*<(.*)>", name)
+        if repr_format_match:
+            name = repr_format_match.groups()[0]
         for task in self.tasks:
             if task.name == name:
                 return task
@@ -126,3 +128,6 @@ class Pipeline:
                     if self.conditional_stops[task.name](task.evaluated_result):
                         return [task.evaluated_result, (task.to_stopping_holder())]
         return [output.evaluated_result for output in self.outputs]
+
+    def __repr__(self) -> str:
+        return f"Pipeline(in: {self.input}, out: {self.outputs})"

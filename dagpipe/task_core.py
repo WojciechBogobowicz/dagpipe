@@ -40,11 +40,14 @@ class Task:
         self.func = func
         self.args = args
         self.kwargs = kwargs
-        self.name = name if name != "auto" else repr(self)
+        self.name = name if name != "auto" else self._get_function_name()
         self.evaluated_result = None
         self.outputs_num=outputs_num
         self.references = None
         self._index = 0
+        
+    def _get_function_name(self):
+        return self.func.__name__
 
     def run(self, *args, **kwargs) -> Any:
         """
@@ -136,11 +139,10 @@ class Task:
             for ref, name in zip(self, name):
                 ref.name = name
         return self
-    
+
     def to_stopping_holder(self):
         """Returns holder for task."""
         return StoppingTaskHolder(self)
-        
 
     def __repr__(self) -> str:
         """
@@ -149,7 +151,7 @@ class Task:
         Returns:
             str: The name of the inner function.
         """
-        return self.func.__name__
+        return f"Task<{self.name}>"
 
 
 class MethodTask(Task):
@@ -183,16 +185,19 @@ class MethodTask(Task):
 
     def __repr__(self) -> str:
         """
-        Return a string representation of the MethodTask instance in form:
+        Return a string representation of the MethodTask instance in form
+        TaskMethod<method name> where method name is:
         - 'ClassName.function_name' in most cases
         - 'ClassName' if __call__ method is wrapped.
         Returns:
             str: The name of the instance and the method.
         """
+        return f"MethodTask<{self.name}>"
+
+    def _get_function_name(self):
         if self.func.__name__ == "__call__":
             return self.instance.__class__.__name__
         return f"{self.instance.__class__.__name__}.{self.func.__name__}"
-
 
 class TaskReference(Task):
     """
@@ -214,7 +219,7 @@ class TaskReference(Task):
         super().__init__(task.func, *task.args, name=name, outputs_num=1, **task.kwargs)
         self.task = task
         self.ref_index = ref_index
-        
+
     def run(self, *args, **kwargs) -> Any:
         """
         Execute the reference task if necessary and update the evaluated result.
@@ -251,11 +256,8 @@ class TaskReference(Task):
     def __repr__(self) -> str:
         """
         Return a string representation of the Task Reference instance.
-
-        Returns:
-            str: *task*-ref[*id*].
         """
-        return f"{repr(self.task)}-ref[{self.ref_index}]"
+        return f"TaskRef{self.ref_index}<{self.name}>"
 
 
 class StoppingTaskHolder:
