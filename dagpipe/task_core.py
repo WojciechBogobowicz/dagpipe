@@ -40,12 +40,12 @@ class Task:
         self.func = func
         self.args = args
         self.kwargs = kwargs
+        self.outputs_num=outputs_num
         self.name = name if name != "auto" else self._get_function_name()
         self.evaluated_result = None
-        self.outputs_num=outputs_num
         self.references = None
         self._index = 0
-        
+
     def _get_function_name(self):
         return self.func.__name__
 
@@ -105,9 +105,13 @@ class Task:
             for index in range(self.outputs_num):
                 ref_name = f"{self.name}[{index}]"
                 self.references.append(TaskReference(self, index, ref_name))
+        elif len(self.references) < self.outputs_num:
+            for index in range(len(self.references), self.outputs_num):
+                ref_name = f"{self.name}[{index}]"
+                self.references.append(TaskReference(self, index, ref_name))
         self._index = 0
         return self
-    
+
     def __next__(self):
         """
         Get the next output reference in the iteration.
@@ -138,6 +142,18 @@ class Task:
         else:
             for ref, name in zip(self, name):
                 ref.name = name
+        return self
+
+    def split_output(self, outputs_names: Iterable[str]):
+        """Create Task references with given names."""
+        outputs_names = list(outputs_names)
+        self.set_outputs_num(len(outputs_names))
+        self.set_name(outputs_names)
+        return self
+
+    def set_outputs_num(self, num: int):
+        """Redefine number of outputs in task"""
+        self.outputs_num = num
         return self
 
     def to_stopping_holder(self):
