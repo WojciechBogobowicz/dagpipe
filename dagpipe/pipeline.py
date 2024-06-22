@@ -22,8 +22,8 @@ class Pipeline:
         tasks (list[Task]): The list of tasks in the order they should be executed.
     """
     def __init__(self, 
-                 input: Task, 
-                 outputs: list[Task], 
+                 inputs: Task | list[Task],
+                 outputs: Task | list[Task],
                  conditional_stops: dict[str, Callable[[Any], bool]] = None):
         """
         Initialize a Pipeline instance.
@@ -35,10 +35,22 @@ class Pipeline:
                 function that would be evaluated on task output.
                 If it returns true, then pipeline execution would be early stopped.
         """
-        self.input: Task = input
-        self.outputs: list[Task] = outputs
+        self.inputs: list[Task] = self._parse_arg(inputs)
+        self.outputs: list[Task] = self._parse_arg(outputs)
         self.tasks: list[Task] = self._gather_tasks()
         self.conditional_stops = conditional_stops
+        self.__have_multi_input = (len(self.inputs) > 1)
+
+    @staticmethod
+    def _parse_arg(inputs):
+        if isinstance(inputs, Task):
+            return [inputs]
+        if isinstance(inputs, list):
+            if all(isinstance(t, Task) for t in inputs):
+                return inputs
+        raise ValueError(f"Only Tasks or lists of tasks are acceptable. Got {inputs}")
+    
+            
         
     @classmethod
     def sequential(
@@ -78,6 +90,21 @@ class Pipeline:
         Returns:
             list[Task]: The list of tasks in execution order.
         """
+        children_num = self.__count_tasks_children()
+        tasks = self.__order_tasks(children_num)
+        self.__assert_all_inputs_seen(tasks)
+        return tasks
+
+    def __assert_all_inputs_seen(self, tasks):
+        for input_ in self.inputs:
+            if not input_ in tasks:
+                raise RuntimeError(
+                    "Unable to build graph. "
+                   f"No connection between {input_} and {self.outputs} found. "
+                    "Verify if pipeline is builded correctly."
+                )
+        
+    def __count_tasks_children(self):
         children_num = dict()
         seen = set()
         stack = list(self.outputs)
@@ -89,7 +116,9 @@ class Pipeline:
                     if isinstance(parent, Task):
                         stack.append(parent)
                         children_num[id(parent)] = children_num.get(id(parent), 0) + 1
-
+        return children_num
+    
+    def __order_tasks(self, children_num):
         tasks = []
         seen = set(self.outputs)
         stack = list(self.outputs)
@@ -100,34 +129,74 @@ class Pipeline:
             for parent in current_task.args + tuple(current_task.kwargs.values()):
                 if isinstance(parent, Task):
                     children_num[id(parent)] = children_num.get(id(parent), 0) - 1
-                    if (children_num[id(parent)] == 0): #and (parent not in seen):
+                    if children_num[id(parent)] == 0: #and (parent not in seen):
                         stack.append(parent)
                         seen.add(parent)
-
         tasks.reverse()
         return tasks
 
-    def run(self, *args, **kwargs) -> list[Task]:
+
+    def run(self, *single_input_args, **single_or_multi_input_kwargs) -> list[Task]:
         """
         Execute the pipeline of tasks with optional initial arguments.
 
         Args:
-            *args: Positional arguments to be passed to the initial task.
-                Currently stored args would be replaced in total.
-            **kwargs: Keyword arguments to be passed to the initial task.
-                Currently stored kwargs would be updated.
+            *single_input_args: 
+                Positional arguments to be passed to the input tasks.
+                This param is ignored in when pipeline have multiple inputs.
+            **single_or_multi_input_kwargs: 
+                Keyword arguments to be passed to the initial task.
+            The currently stored keyword arguments would be updated.
+            When the pipeline has multiple inputs, these keyword arguments 
+            should be in the format {task_name: args_or_kwargs}, where 
+            args_or_kwargs can be represented as single value or tuple 
+            what would be threated as args, or dictionary that would be 
+            threated as kwargs, eventually tuple[tuple, dict] that would 
+            be translated to (args, kwargs).
 
         Returns:
             list: The evaluated results of the output tasks.
         """
-        self.input.update_args_if_provided(*args, **kwargs)
+        self._setup_input(single_input_args, single_or_multi_input_kwargs)
         for task in self.tasks:
             task.run()
             if self.conditional_stops:
-                if (task.name in self.conditional_stops):
+                if task.name in self.conditional_stops:
                     if self.conditional_stops[task.name](task.evaluated_result):
                         return [task.evaluated_result, (task.to_stopping_holder())]
         return [output.evaluated_result for output in self.outputs]
 
+    def _setup_input(self, single_input_args, single_or_multi_input_kwargs):
+        if self.__have_multi_input:
+            self._update_args_for_multi_input(single_or_multi_input_kwargs)
+        else:
+            self.inputs[0].update_args_if_provided(
+                *single_input_args, **single_or_multi_input_kwargs)
+
+    def _update_args_for_multi_input(self, single_or_multi_input_kwargs: dict):
+        for task_name, arg_or_kwarg in single_or_multi_input_kwargs.items():
+            task = self[task_name]
+            if not task in self.inputs:
+                raise ValueError(f"{task} is not in inputs.")
+            args, kwargs = self._parse_args_or_kwargs(arg_or_kwarg)
+            task.update_args_if_provided(*args, **kwargs)
+
+    @staticmethod
+    def _parse_args_or_kwargs(arg_or_kwarg: Any | tuple | dict):
+        if isinstance(arg_or_kwarg, tuple):
+            if (
+                (len(arg_or_kwarg) == 2) 
+                and isinstance(arg_or_kwarg[0], tuple)
+                and isinstance(arg_or_kwarg[1], dict)
+            ):
+                args_, kwargs_ = arg_or_kwarg
+            else:
+                args_, kwargs_ = arg_or_kwarg, {}
+        elif isinstance(arg_or_kwarg, dict):
+            args_, kwargs_ = tuple(), arg_or_kwarg
+        else:
+            args_, kwargs_ = (arg_or_kwarg, ), {}
+        return args_, kwargs_
+
     def __repr__(self) -> str:
-        return f"Pipeline(in: {self.input}, out: {self.outputs})"
+        return f"Pipeline(in: {self.inputs}, out: {self.outputs})"
