@@ -9,6 +9,8 @@ Classes:
 
 from typing import Any, Iterable
 
+from dagpipe.utils import uniform_args_kwargs_order
+
 
 class Task:
     """
@@ -38,6 +40,7 @@ class Task:
             **kwargs: Keyword arguments to be passed to the function.
         """
         self.func = func
+        args, kwargs = uniform_args_kwargs_order(func, args, kwargs)
         self.args = args
         self.kwargs = kwargs
         self.outputs_num=outputs_num
@@ -60,6 +63,7 @@ class Task:
         Returns:
             Any: The result of the function execution.
         """
+        args, kwargs = uniform_args_kwargs_order(self.func, args, kwargs)
         self.update_args_if_provided(*args, **kwargs)
         args, kwargs = self.unpack_args_from_results()
         self.evaluated_result = self.evaluate_result(*args, **kwargs)
@@ -95,7 +99,7 @@ class Task:
         args = tuple(a if not isinstance(a, Task) else a.evaluated_result for a in self.args)
         kwargs = {k: v if not isinstance(v, Task) else v.evaluated_result for k, v in self.kwargs.items()}
         return args, kwargs
-    
+
     def __iter__(self):
         """
         Initialize an iterator for the task's outputs.
@@ -192,7 +196,7 @@ class MethodTask(Task):
         """
         self.instance = instance
         super().__init__(func, *args, name=name, outputs_num=outputs_num, **kwargs)
-
+        
     def evaluate_result(self, *args, **kwargs) -> Any:
         """
         Evaluate the result by executing the method with given arguments.
