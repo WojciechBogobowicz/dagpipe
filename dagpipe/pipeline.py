@@ -35,20 +35,20 @@ class Pipeline:
                 function that would be evaluated on task output.
                 If it returns true, then pipeline execution would be early stopped.
         """
-        self.inputs: list[Task] = self._parse_arg(inputs)
-        self.outputs: list[Task] = self._parse_arg(outputs)
+        self.inputs: list[Task] = self._uniform_to_list(inputs, Task)
+        self.outputs: list[Task] = self._uniform_to_list(outputs, Task)
         self.tasks: list[Task] = self._gather_tasks()
         self.conditional_stops = conditional_stops
         self._have_multi_input = (len(self.inputs) > 1)
 
     @staticmethod
-    def _parse_arg(inputs):
-        if isinstance(inputs, Task):
+    def _uniform_to_list(inputs, parsed_type: type):
+        if isinstance(inputs, parsed_type):
             return [inputs]
         if isinstance(inputs, list):
-            if all(isinstance(t, Task) for t in inputs):
+            if all(isinstance(t, parsed_type) for t in inputs):
                 return inputs
-        raise ValueError(f"Only Tasks or lists of tasks are acceptable. Got {inputs}")
+        raise ValueError(f"Only {parsed_type} type or lists of {parsed_type}s are acceptable. Got {inputs}")
 
     def to_task(self, *args, **kwargs) -> Task:
         """Create task that would execute self.run function with given *args, **kwargs"""
