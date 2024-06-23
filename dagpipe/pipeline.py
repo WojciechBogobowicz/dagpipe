@@ -7,7 +7,7 @@ Classes:
 """
 
 import re
-from typing import Any, Callable
+from typing import Any, Callable, Iterable
 from dagpipe.task_core import Task
 
 
@@ -65,24 +65,25 @@ class Pipeline:
     @classmethod
     def sequential(
             cls,
-            tasks_sequence: list,
+            tasks_sequence: Iterable,
             conditional_stops: dict[str, Callable[[Any], bool]] = None,
         ):
         """
         Create a Pipeline instance where tasks are executed sequentially.
 
         Args:
-            tasks_sequence (list): A list of tasks to be executed in sequence.
+            tasks_sequence (Iterable): Tasks to be executed in sequence.
 
         Returns:
             Pipeline: A Pipeline instance with the tasks set to execute in sequence.
         """
+        tasks_sequence = list(tasks_sequence)
         input_task = tasks_sequence.pop(0)
-        input = input_task(Any)
-        x = input
+        input_ = input_task(Any)
+        x = input_
         for task in tasks_sequence:
             x = task(x)
-        return cls(input, [x], conditional_stops)
+        return cls(input_, x, conditional_stops)
 
     def __getitem__(self, name: str) -> Task:
         repr_format_match = re.search(r"^.*Task.*<(.*)>", name)
