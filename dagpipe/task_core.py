@@ -63,7 +63,6 @@ class Task:
         Returns:
             Any: The result of the function execution.
         """
-        args, kwargs = uniform_args_kwargs_order(self.func, args, kwargs)
         self.update_args_if_provided(*args, **kwargs)
         args, kwargs = self.unpack_args_from_results()
         self.evaluated_result = self.evaluate_result(*args, **kwargs)
@@ -83,6 +82,7 @@ class Task:
             *args: Replace currently stored args starting from args beginning.
             **kwargs: Only update existing kwargs.
         """
+        args, kwargs = uniform_args_kwargs_order(self.func, args, kwargs)
         if args:
             self.args = tuple([*args, *self.args[len(args):]])
         if kwargs:
