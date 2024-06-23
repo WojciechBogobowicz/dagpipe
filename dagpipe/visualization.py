@@ -50,7 +50,7 @@ def _build_graph(pipeline : Pipeline):
     Returns:
         list: The evaluated results of the output tasks.
     """
-    dot = graphviz.Digraph(strict=True, format='png')
+    dot = graphviz.Digraph(strict=False, format='png')
     for task in pipeline.tasks:
         if isinstance(task, TaskReference):
             task = task.task
@@ -60,23 +60,40 @@ def _build_graph(pipeline : Pipeline):
             if task.name in pipeline.conditional_stops:
                 stop = pipeline.conditional_stops[task.name]
                 label, color = __update_node_attrs_for_stop(stop, label)
-        dot.node(str(id(task)), label=label, color=color)
-        
-            
+        dot.node(__get_node_name(task), label=label, color=color)
+
+    created_edges = set()
     for task in pipeline.tasks:
-        if isinstance(task, TaskReference):
+        if isinstance(task, Task):
+            if isinstance(task, TaskReference):
+                task = task.task
             for arg in task.args + tuple(task.kwargs.values()):
-                if isinstance(arg, Task):
-                    dot.edge(str(id(arg)), str(id(task.task)))
-            
-        elif isinstance(task, Task):
-            for arg in task.args + tuple(task.kwargs.values()):
-                if isinstance(arg, TaskReference):
-                    dot.edge(str(id(arg.task)), str(id(task)), label=arg.name)
-                elif isinstance(arg, Task):
-                    dot.edge(str(id(arg)), str(id(task)))
-                
+                if not isinstance(arg, Task):
+                    continue
+                edge, edge_kwargs = __define_edge(task, arg)
+                label = edge_kwargs.get("label", None)
+                if (edge, label) not in created_edges:
+                    dot.edge(*edge,  **edge_kwargs)
+                    created_edges.add((edge, label))
     return dot
+
+
+def __define_edge(task_to: Task, task_from: Task):
+    if isinstance(task_from, TaskReference):
+        edge = __get_node_name(task_from.task), __get_node_name(task_to)
+        edge_kwargs = dict(label=task_from.name)
+    else: # Normal Task
+        edge = __get_node_name(task_from), __get_node_name(task_to)
+        edge_kwargs= dict(color='black')
+    return edge,edge_kwargs
+
+
+def __get_node_name(task):
+    node_name = f"{task.name}_{str(id(task))}"
+    for symbol in "[] <>,:":
+        node_name = node_name.replace(symbol, "")
+    return node_name
+
 
 def __update_node_attrs_for_stop(stop, label):
     if hasattr(stop, "name"):
