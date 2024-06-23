@@ -8,7 +8,7 @@ Classes:
 
 import re
 from typing import Any, Callable, Iterable
-from dagpipe.task_core import Task
+from dagpipe.task_core import Task, TaskReference
 
 
 class Pipeline:
@@ -89,7 +89,8 @@ class Pipeline:
         repr_format_match = re.search(r"^.*Task.*<(.*)>", name)
         if repr_format_match:
             name = repr_format_match.groups()[0]
-        for task in self.tasks:
+        tasks_from_references = [t.task for t in self.tasks if isinstance(t, TaskReference)]
+        for task in self.tasks + tasks_from_references:
             if task.name == name:
                 return task
         raise KeyError(f"Task with name {name} not found in self.tasks")
@@ -208,6 +209,21 @@ class Pipeline:
         else:
             args_, kwargs_ = (arg_or_kwarg, ), {}
         return args_, kwargs_
+    
+    def with_outputs(self, outputs_names: str | list[str]):
+        """Create new pipeline with inputs and conditional stops from self.
+
+
+        Args:
+            outputs_names (Task | list[Task]): _description_
+
+        Returns:
+            dagpipe.Pipeline: New pipeline, with changed outputs
+        """
+        outputs_names = self._uniform_to_list(outputs_names, str)
+        outputs = [self[name] for name in outputs_names]
+        
+        return Pipeline(self.inputs, outputs, self.conditional_stops)
 
     def __repr__(self) -> str:
         return f"Pipeline(in: {self.inputs}, out: {self.outputs})"
