@@ -39,7 +39,7 @@ class Pipeline:
         self.outputs: list[Task] = self._parse_arg(outputs)
         self.tasks: list[Task] = self._gather_tasks()
         self.conditional_stops = conditional_stops
-        self.__have_multi_input = (len(self.inputs) > 1)
+        self._have_multi_input = (len(self.inputs) > 1)
 
     @staticmethod
     def _parse_arg(inputs):
@@ -49,12 +49,22 @@ class Pipeline:
             if all(isinstance(t, Task) for t in inputs):
                 return inputs
         raise ValueError(f"Only Tasks or lists of tasks are acceptable. Got {inputs}")
-    
-            
-        
+
+    def to_task(self, *args, **kwargs) -> Task:
+        """Create task that would execute self.run function with given *args, **kwargs"""
+        pipeline_task = Task(self.run, *args, name=str(self), **kwargs)
+        print("input", args, kwargs)
+        print("stored in pipeline", pipeline_task.args, pipeline_task.kwargs)
+        pipeline_task.update_args_if_provided(*args, **kwargs)
+        print("stored in pipeline after update", pipeline_task.args, pipeline_task.kwargs)
+        if len(self.outputs) > 1:
+            names = [o.name for o in self.outputs]
+            pipeline_task.split_output(names)
+        return pipeline_task
+
     @classmethod
     def sequential(
-            cls, 
+            cls,
             tasks_sequence: list,
             conditional_stops: dict[str, Callable[[Any], bool]] = None,
         ):
@@ -167,7 +177,7 @@ class Pipeline:
         return [output.evaluated_result for output in self.outputs]
 
     def _setup_input(self, single_input_args, single_or_multi_input_kwargs):
-        if self.__have_multi_input:
+        if self._have_multi_input:
             self._update_args_for_multi_input(single_or_multi_input_kwargs)
         else:
             self.inputs[0].update_args_if_provided(
