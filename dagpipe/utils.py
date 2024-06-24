@@ -9,6 +9,14 @@ class EmptyInputError(Exception):
     """Custom exception for empty input errors."""
     
 
+import inspect
+from collections import namedtuple
+
+class ArgumentError(Exception):
+    pass
+
+class EmptyInputError(Exception):
+    pass
 
 def uniform_args_kwargs_order(func, input_args, input_kwargs, allow_empty_input=True):
     """
@@ -27,22 +35,6 @@ def uniform_args_kwargs_order(func, input_args, input_kwargs, allow_empty_input=
     Raises:
         ArgumentError: If an argument is passed both as a positional and a keyword argument.
         EmptyInputError: If allow_empty_input is False and inspect._empty objects are encountered.
-
-    Example:
-        def example_func(a, b, c=3, *args, d=4, **kwargs):
-            pass
-
-        input_args = [1, 2]
-        input_kwargs = {'b': 2, 'd': 5, 'e': 6}
-
-        try:
-            output_args, output_kwargs = reorder_args_kwargs(example_func, input_args, input_kwargs)
-            print("Output Args:", output_args)
-            print("Output Kwargs:", output_kwargs)
-        except ArgumentError as e:
-            print(f"Error: {e}")
-        except EmptyInputError as e:
-            print(f"Error: {e}")
     """
     # Get the signature of the function
     sig = inspect.signature(func)
@@ -69,7 +61,8 @@ def uniform_args_kwargs_order(func, input_args, input_kwargs, allow_empty_input=
                 output_args.append(input_kwargs.pop(param_name))
                 used_params.add(param_name)
             elif param.default is not inspect.Parameter.empty:
-                output_args.append(param.default)
+                if not allow_empty_input:
+                    raise EmptyInputError(f"Argument '{param_name}' is required but not provided.")
             elif not allow_empty_input:
                 raise EmptyInputError(f"Argument '{param_name}' is required but not provided.")
         elif param.kind == inspect.Parameter.VAR_POSITIONAL:
@@ -80,7 +73,8 @@ def uniform_args_kwargs_order(func, input_args, input_kwargs, allow_empty_input=
                 output_kwargs[param_name] = input_kwargs.pop(param_name)
                 used_params.add(param_name)
             elif param.default is not inspect.Parameter.empty:
-                output_kwargs[param_name] = param.default
+                if not allow_empty_input:
+                    raise EmptyInputError(f"Keyword argument '{param_name}' is required but not provided.")
             elif not allow_empty_input:
                 raise EmptyInputError(f"Keyword argument '{param_name}' is required but not provided.")
         elif param.kind == inspect.Parameter.VAR_KEYWORD:
