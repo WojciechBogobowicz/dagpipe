@@ -7,9 +7,11 @@ Classes:
 """
 
 import re
-from typing import Any, Callable, Iterable
-from dagpipe.task_core import PipelineTask, Task, TaskReference
+from typing import Any, Callable, Iterable, Union
+from dagpipe.task_core import MethodTask, PipelineTask, Task, TaskReference
 
+
+TaskType = Union[Task, TaskReference, MethodTask, PipelineTask]
 
 class Pipeline:
     """
@@ -18,36 +20,36 @@ class Pipeline:
 
     Attributes:
         input (Task): The initial task of the pipeline.
-        outputs (list[Task]): The list of output tasks of the pipeline.
-        tasks (list[Task]): The list of tasks in the order they should be executed.
+        outputs (list[TaskType]): The list of output tasks of the pipeline.
+        tasks (list[TaskType]): The list of tasks in the order they should be executed.
     """
     def __init__(self, 
-                 inputs: Task | list[Task],
-                 outputs: Task | list[Task],
+                 inputs: Task | list[TaskType],
+                 outputs: Task | list[TaskType],
                  conditional_stops: dict[str, Callable[[Any], bool]] = None):
         """
         Initialize a Pipeline instance.
 
         Args:
             input (Task): The initial task of the pipeline.
-            outputs (list[Task]): The list of output tasks of the pipeline.
+            outputs (list[TaskType]): The list of output tasks of the pipeline.
             conditional_stops (dict, Optional): key - task name
                 function that would be evaluated on task output.
                 If it returns true, then pipeline execution would be early stopped.
         """
-        self.inputs: list[Task] = self._uniform_to_list(inputs, Task)
-        self.outputs: list[Task] = self._uniform_to_list(outputs, Task)
-        self.tasks: list[Task] = self._gather_tasks()
+        self.inputs: list[TaskType] = self._uniform_to_list(inputs, Task)
+        self.outputs: list[TaskType] = self._uniform_to_list(outputs, Task)
+        self.tasks: list[TaskType] = self._gather_tasks()
         self.conditional_stops = conditional_stops
         self._have_multi_input = (len(self.inputs) > 1)
         
     @property
-    def nested_tasks(self):
+    def nested_tasks(self) -> list[TaskType]:
         """
         Get all tasks in the pipeline, including nested tasks from any PipelineTask instances.
 
         Returns:
-            list[Task]: A list of all tasks in the pipeline, including nested tasks in execution order.
+            list[TaskType]: A list of all tasks in the pipeline, including nested tasks in execution order.
         """
         nested = []
         for task in self.tasks:
@@ -56,7 +58,7 @@ class Pipeline:
                 nested.extend(task.pipeline.nested_tasks)
         return nested
     
-    def find(self, task_name: str) -> Task | list[Task]:
+    def find(self, task_name: str) -> Task | list[TaskType]:
         """
         Find tasks by name in the pipeline, including tasks from sub-pipelines.
 
@@ -64,7 +66,7 @@ class Pipeline:
             task_name (str): The name of the task(s) to find.
 
         Returns:
-            Task | list[Task]: A single Task if exactly one is found, otherwise a list of matching tasks.
+            Task | list[TaskType]: A single Task if exactly one is found, otherwise a list of matching tasks.
         """
         task_name = self.__strip_task_name_if_needed(task_name)
         return_tasks = list(filter(lambda t: t.name == task_name, self.nested_tasks))
@@ -82,7 +84,7 @@ class Pipeline:
                 return inputs
         raise ValueError(f"Only {parsed_type} type or lists of {parsed_type}s are acceptable. Got {inputs}")
 
-    def to_task(self, *args, **kwargs) -> Task:
+    def to_task(self, *args, **kwargs) -> PipelineTask:
         """Create task that would execute self.run function with given *args, **kwargs"""
         pipeline_task = PipelineTask(self.run, *args, name=str(self), **kwargs)
         pipeline_task.update_args_if_provided(*args, **kwargs)
@@ -114,7 +116,7 @@ class Pipeline:
             x = task(x)
         return cls(input_, x, conditional_stops)
 
-    def __getitem__(self, name: str) -> Task:
+    def __getitem__(self, name: str) -> TaskType:
         name = self.__strip_task_name_if_needed(name)
         tasks_from_references = [t.task for t in self.tasks if isinstance(t, TaskReference)]
         for task in self.tasks + tasks_from_references:
@@ -128,12 +130,12 @@ class Pipeline:
             name = repr_format_match.groups()[0]
         return name
 
-    def _gather_tasks(self) -> list[Task]:
+    def _gather_tasks(self) -> list[TaskType]:
         """
         Gather all tasks in the pipeline in the order they should be executed.
 
         Returns:
-            list[Task]: The list of tasks in execution order.
+            list[TaskType]: The list of tasks in execution order.
         """
         children_num = self.__count_tasks_children()
         tasks = self.__order_tasks(children_num)
@@ -181,7 +183,7 @@ class Pipeline:
         return tasks
 
 
-    def run(self, *single_input_args, **single_or_multi_input_kwargs) -> list[Task]:
+    def run(self, *single_input_args, **single_or_multi_input_kwargs) -> Any:
         """
         Execute the pipeline of tasks with optional initial arguments.
 
@@ -248,7 +250,7 @@ class Pipeline:
 
 
         Args:
-            outputs_names (Task | list[Task]): _description_
+            outputs_names (Task | list[TaskType]): _description_
 
         Returns:
             dagpipe.Pipeline: New pipeline, with changed outputs
