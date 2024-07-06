@@ -9,14 +9,8 @@ class EmptyInputError(Exception):
     """Custom exception for empty input errors."""
     
 
-import inspect
-from collections import namedtuple
 
-class ArgumentError(Exception):
-    pass
 
-class EmptyInputError(Exception):
-    pass
 
 def uniform_args_kwargs_order(func, input_args, input_kwargs, allow_empty_input=True):
     """

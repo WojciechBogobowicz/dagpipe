@@ -7,11 +7,11 @@ Classes:
 """
 
 import re
-from typing import Any, Callable, Iterable, Union
-from dagpipe.task_core import MethodTask, PipelineTask, Task, TaskReference
+from typing import Any, Callable, Iterable
+from dagpipe.task_core import PipelineTask, Task, TaskReference
+from dagpipe.typing import TaskType
 
 
-TaskType = Union[Task, TaskReference, MethodTask, PipelineTask]
 
 class Pipeline:
     """

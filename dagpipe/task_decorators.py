@@ -8,8 +8,6 @@ Functions:
     method_task(method): A decorator that wraps a method in a MethodTask instance.
 """
 
-import functools
-import inspect
 from typing import Any, Callable
 
 from dagpipe.task_core import Task, MethodTask
