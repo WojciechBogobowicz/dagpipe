@@ -8,7 +8,7 @@ Classes:
 
 import re
 from typing import Any, Callable, Iterable
-from dagpipe.task_core import Task, TaskReference
+from dagpipe.task_core import PipelineTask, Task, TaskReference
 
 
 class Pipeline:
@@ -40,6 +40,38 @@ class Pipeline:
         self.tasks: list[Task] = self._gather_tasks()
         self.conditional_stops = conditional_stops
         self._have_multi_input = (len(self.inputs) > 1)
+        
+    @property
+    def nested_tasks(self):
+        """
+        Get all tasks in the pipeline, including nested tasks from any PipelineTask instances.
+
+        Returns:
+            list[Task]: A list of all tasks in the pipeline, including nested tasks in execution order.
+        """
+        nested = []
+        for task in self.tasks:
+            nested.append(task)
+            if isinstance(task, PipelineTask):
+                nested.extend(task.pipeline.nested_tasks)
+        return nested
+    
+    def find(self, task_name: str) -> Task | list[Task]:
+        """
+        Find tasks by name in the pipeline, including tasks from sub-pipelines.
+
+        Args:
+            task_name (str): The name of the task(s) to find.
+
+        Returns:
+            Task | list[Task]: A single Task if exactly one is found, otherwise a list of matching tasks.
+        """
+        task_name = self.__strip_task_name_if_needed(task_name)
+        return_tasks = list(filter(lambda t: t.name == task_name, self.nested_tasks))
+        if len(return_tasks) == 1:
+            return return_tasks[0]
+        return return_tasks
+            
 
     @staticmethod
     def _uniform_to_list(inputs, parsed_type: type):
@@ -52,16 +84,13 @@ class Pipeline:
 
     def to_task(self, *args, **kwargs) -> Task:
         """Create task that would execute self.run function with given *args, **kwargs"""
-        pipeline_task = Task(self.run, *args, name=str(self), **kwargs)
-        print("input", args, kwargs)
-        print("stored in pipeline", pipeline_task.args, pipeline_task.kwargs)
+        pipeline_task = PipelineTask(self.run, *args, name=str(self), **kwargs)
         pipeline_task.update_args_if_provided(*args, **kwargs)
-        print("stored in pipeline after update", pipeline_task.args, pipeline_task.kwargs)
         if len(self.outputs) > 1:
             names = [o.name for o in self.outputs]
             pipeline_task.split_output(names)
         return pipeline_task
-
+    
     @classmethod
     def sequential(
             cls,
@@ -86,14 +115,18 @@ class Pipeline:
         return cls(input_, x, conditional_stops)
 
     def __getitem__(self, name: str) -> Task:
-        repr_format_match = re.search(r"^.*Task.*<(.*)>", name)
-        if repr_format_match:
-            name = repr_format_match.groups()[0]
+        name = self.__strip_task_name_if_needed(name)
         tasks_from_references = [t.task for t in self.tasks if isinstance(t, TaskReference)]
         for task in self.tasks + tasks_from_references:
             if task.name == name:
                 return task
         raise KeyError(f"Task with name {name} not found in self.tasks")
+
+    def __strip_task_name_if_needed(self, name):
+        repr_format_match = re.search(r"^.*Task.*<(.*)>", name)
+        if repr_format_match:
+            name = repr_format_match.groups()[0]
+        return name
 
     def _gather_tasks(self) -> list[Task]:
         """
@@ -226,4 +259,6 @@ class Pipeline:
         return Pipeline(self.inputs, outputs, self.conditional_stops)
 
     def __repr__(self) -> str:
-        return f"Pipeline(in: {self.inputs}, out: {self.outputs})"
+        inputs_names = [t.name for t in self.inputs]
+        outputs_names = [t.name for t in self.outputs]
+        return f"Pipeline(in: {inputs_names}, out: {outputs_names})"

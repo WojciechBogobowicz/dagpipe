@@ -7,9 +7,13 @@ Classes:
     MethodTask: Similar to task, but works with class methods.
 """
 
-from typing import Any, Iterable
+from typing import Any, Iterable, TYPE_CHECKING
 
 from dagpipe.utils import uniform_args_kwargs_order
+
+
+if TYPE_CHECKING:
+    from dagpipe.pipeline import Pipeline
 
 
 class Task:
@@ -174,6 +178,21 @@ class Task:
         return f"Task<{self.name}>"
 
 
+class PipelineTask(Task):
+    """
+    A class that wraps Pipeline into Task.
+
+    Attributes:
+        pipeline (dagpipe.Pipeline): The instance of pipeline that .
+    """
+    def __init__(self, func, *args, name="auto", outputs_num=1, **kwargs):
+        super().__init__(func, *args, name=name, outputs_num=outputs_num, **kwargs)
+        self.pipeline: Pipeline = func.__self__
+
+    def __repr__(self) -> str:
+        return "Pipeline" + super().__repr__()
+
+
 class MethodTask(Task):
     """
     A class representing a task that involves executing a method on an instance.
@@ -219,6 +238,7 @@ class MethodTask(Task):
             return self.instance.__class__.__name__
         return f"{self.instance.__class__.__name__}.{self.func.__name__}"
 
+
 class TaskReference(Task):
     """
     A class representing a reference to a specific output of a Task.
@@ -237,7 +257,7 @@ class TaskReference(Task):
             name (str): The name of the reference.
         """
         super().__init__(task.func, *task.args, name=name, outputs_num=1, **task.kwargs)
-        self.task = task
+        self.task: Task = task
         self.ref_index = ref_index
 
     def run(self, *args, **kwargs) -> Any:
