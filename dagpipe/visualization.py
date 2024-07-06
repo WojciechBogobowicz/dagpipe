@@ -75,6 +75,17 @@ def _build_graph(pipeline : Pipeline):
                 if (edge, label) not in created_edges:
                     dot.edge(*edge,  **edge_kwargs)
                     created_edges.add((edge, label))
+                    
+    with dot.subgraph() as s:
+        s.attr(rank='same')
+        for task in pipeline.inputs:
+            s.node(__get_node_name(task))
+            
+    with dot.subgraph() as s:
+        s.attr(rank='same')
+        for task in pipeline.outputs:
+            s.node(__get_node_name(task))
+        
     return dot
 
 
