@@ -209,11 +209,11 @@ class Pipeline:
                 if task.name in self.conditional_stops:
                     if self.conditional_stops[task.name](task.evaluated_result):
                         return [task.to_stopping_holder() for _ in self.outputs]
-            if isinstance(task, TaskReference):
-                og_task = task.task
-                if og_task.name in self.conditional_stops:
-                    if self.conditional_stops[og_task.name](og_task.evaluated_result):
-                        return [og_task.to_stopping_holder() for _ in self.outputs]
+                if isinstance(task, TaskReference):
+                    og_task = task.task
+                    if og_task.name in self.conditional_stops:
+                        if self.conditional_stops[og_task.name](og_task.evaluated_result):
+                            return [og_task.to_stopping_holder() for _ in self.outputs]
         return [output.evaluated_result for output in self.outputs]
 
     def _setup_input(self, single_input_args, single_or_multi_input_kwargs):
