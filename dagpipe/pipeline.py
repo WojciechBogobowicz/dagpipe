@@ -73,7 +73,6 @@ class Pipeline:
         if len(return_tasks) == 1:
             return return_tasks[0]
         return return_tasks
-            
 
     @staticmethod
     def _uniform_to_list(inputs, parsed_type: type):
@@ -182,7 +181,6 @@ class Pipeline:
         tasks.reverse()
         return tasks
 
-
     def run(self, *single_input_args, **single_or_multi_input_kwargs) -> Any:
         """
         Execute the pipeline of tasks with optional initial arguments.
@@ -210,7 +208,12 @@ class Pipeline:
             if self.conditional_stops:
                 if task.name in self.conditional_stops:
                     if self.conditional_stops[task.name](task.evaluated_result):
-                        return [task.evaluated_result, (task.to_stopping_holder())]
+                        return [task.to_stopping_holder() for _ in self.outputs]
+            if isinstance(task, TaskReference):
+                og_task = task.task
+                if og_task.name in self.conditional_stops:
+                    if self.conditional_stops[og_task.name](og_task.evaluated_result):
+                        return [og_task.to_stopping_holder() for _ in self.outputs]
         return [output.evaluated_result for output in self.outputs]
 
     def _setup_input(self, single_input_args, single_or_multi_input_kwargs):
