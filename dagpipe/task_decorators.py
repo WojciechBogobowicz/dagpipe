@@ -10,7 +10,8 @@ Functions:
 
 from typing import Any, Callable
 
-from dagpipe.task_core import Task, MethodTask
+# from dagpipe.task_core import Task, MethodTask
+from dagpipe.task_core import Task
 
 
 def task(name="auto", outputs_num: int = 1) -> Callable[[Callable], Callable[[Any], Task]]:
@@ -34,19 +35,19 @@ def task(name="auto", outputs_num: int = 1) -> Callable[[Callable], Callable[[An
     return decorator
 
 
-def method_task(name="auto", outputs_num=1) -> Callable[[Callable], Callable[[Any], MethodTask]]:
-    """
-    Similar to 'task' but works with class method instead of standalone functions. 
+# def method_task(name="auto", outputs_num=1) -> Callable[[Callable], Callable[[Any], MethodTask]]:
+#     """
+#     Similar to 'task' but works with class method instead of standalone functions. 
 
-    Args:
-        name (str, optional): Name used in visualization.
-        outputs_num (int, optional): Number of of outputs, function returns.
-    Returns:
-        callable: A wrapped method that returns a MethodTask instance.
-    """
-    def decorator(method):
-        # @functools.wraps(method)
-        def wrapper(instance, *args, **kwargs) -> Task:
-            return MethodTask(instance, method, *args, name=name, outputs_num=outputs_num, **kwargs)
-        return wrapper
-    return decorator
+#     Args:
+#         name (str, optional): Name used in visualization.
+#         outputs_num (int, optional): Number of of outputs, function returns.
+#     Returns:
+#         callable: A wrapped method that returns a MethodTask instance.
+#     """
+#     def decorator(method):
+#         # @functools.wraps(method)
+#         def wrapper(instance, *args, **kwargs) -> Task:
+#             return MethodTask(instance, method, *args, name=name, outputs_num=outputs_num, **kwargs)
+#         return wrapper
+#     return decorator

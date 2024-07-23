@@ -40,16 +40,7 @@ def visualize(pipeline: Pipeline, to_file: str | None = None):
             plt.axis("off")
 
 def _build_graph(pipeline : Pipeline):
-    """
-    Execute the pipeline of tasks with optional initial arguments.
-
-    Args:
-        *args: Positional arguments to be passed to the initial task.
-        **kwargs: Keyword arguments to be passed to the initial task.
-
-    Returns:
-        list: The evaluated results of the output tasks.
-    """
+    """Builds visualization graf for given pipeline"""
     dot = graphviz.Digraph(strict=False, format='png')
     for task in pipeline.tasks:
         if isinstance(task, TaskReference):
@@ -67,7 +58,7 @@ def _build_graph(pipeline : Pipeline):
         if isinstance(task, Task):
             if isinstance(task, TaskReference):
                 task = task.task
-            for arg in task.args + tuple(task.kwargs.values()):
+            for arg in task.params.args + tuple(task.params.kwargs.values()):
                 if not isinstance(arg, Task):
                     continue
                 edge, edge_kwargs = __define_edge(task, arg)

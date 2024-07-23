@@ -9,7 +9,8 @@ Classes:
 
 from typing import Any, Iterable, TYPE_CHECKING
 
-from dagpipe.utils import uniform_args_kwargs_order
+from dagpipe.task_params import TaskParams
+# from dagpipe.utils import uniform_args_kwargs_order
 
 
 if TYPE_CHECKING:
@@ -47,9 +48,7 @@ class Task:
             **kwargs: Keyword arguments to be passed to the function.
         """
         self.func = func
-        args, kwargs = uniform_args_kwargs_order(func, args, kwargs)
-        self.args = args
-        self.kwargs = kwargs
+        self.params = TaskParams(self.func, *args, **kwargs)
         self.outputs_num=outputs_num
         self.name = name if name != "auto" else self._get_function_name()
         self.evaluated_result = None
@@ -70,9 +69,12 @@ class Task:
         Returns:
             Any: The result of the function execution.
         """
-        self.update_args_if_provided(*args, **kwargs)
-        args, kwargs = self.unpack_args_from_results()
-        self.evaluated_result = self.evaluate_result(*args, **kwargs)
+        self.params.update(*args, **kwargs)
+        
+        self.evaluated_result = self.evaluate_result(
+            *self.params.evaluated_args,
+            **self.params.evaluated_kwargs,
+        )
         return self.evaluated_result
 
     def evaluate_result(self, *args, **kwargs) -> Any:
@@ -80,32 +82,6 @@ class Task:
         Evaluate the result by executing the function with given arguments.
         """
         return self.func(*args, **kwargs)
-
-    def update_args_if_provided(self, *args, **kwargs) -> None:
-        """
-        Update the initial arguments if new arguments are provided.
-
-        Args:
-            *args: Replace currently stored args starting from args beginning.
-            **kwargs: Only update existing kwargs.
-        """
-        args, kwargs = uniform_args_kwargs_order(self.func, args, kwargs)
-        if args:
-            self.args = tuple([*args, *self.args[len(args):]])
-        if kwargs:
-            self.kwargs.update(kwargs)
-
-    def unpack_args_from_results(self) -> tuple[tuple, dict]:
-        """
-        Process self.args and self.kwargs in a way that results
-        are encapsulated from Task type values, and rest remains unchanged.
-
-        Returns:
-            Tuple[Tuple, Dict]: The unpacked positional and keyword arguments.
-        """
-        args = tuple(a if not isinstance(a, Task) else a.evaluated_result for a in self.args)
-        kwargs = {k: v if not isinstance(v, Task) else v.evaluated_result for k, v in self.kwargs.items()}
-        return args, kwargs
 
     def __iter__(self):
         """
@@ -181,6 +157,12 @@ class Task:
         return f"Task<{self.name}>"
 
 
+# class TaskIterator:
+#     def __init__(self, task: Task) -> None:
+#         self._task = task
+#         self.ran_refs = None
+        
+
 class PipelineTask(Task):
     """
     A class that wraps Pipeline into Task.
@@ -196,50 +178,50 @@ class PipelineTask(Task):
         return "Pipeline" + super().__repr__()
 
 
-class MethodTask(Task):
-    """
-    A class representing a task that involves executing a method on an instance.
+# class MethodTask(Task):
+#     """
+#     A class representing a task that involves executing a method on an instance.
 
-    Attributes:
-        instance (Any): The instance on which the method will be executed.
-    """
+#     Attributes:
+#         instance (Any): The instance on which the method will be executed.
+#     """
 
-    def __init__(self, instance, func, *args, name="auto", outputs_num=1, **kwargs):
-        """
-        Initialize a MethodTask instance.
+#     def __init__(self, instance, func, *args, name="auto", outputs_num=1, **kwargs):
+#         """
+#         Initialize a MethodTask instance.
 
-        Args:
-            instance (Any): The instance on which the method will be executed.
-            func (callable): The method to be executed.
-            name (str, optional): Name that would be displayed in visualization.
-            outputs_num (int, optional): Number of of outputs, function returns.
-            *args: Positional arguments to be passed to the method.
-            **kwargs: Keyword arguments to be passed to the method.
-        """
-        self.instance = instance
-        super().__init__(func, *args, name=name, outputs_num=outputs_num, **kwargs)
+#         Args:
+#             instance (Any): The instance on which the method will be executed.
+#             func (callable): The method to be executed.
+#             name (str, optional): Name that would be displayed in visualization.
+#             outputs_num (int, optional): Number of of outputs, function returns.
+#             *args: Positional arguments to be passed to the method.
+#             **kwargs: Keyword arguments to be passed to the method.
+#         """
+#         self.instance = instance
+#         super().__init__(func, *args, name=name, outputs_num=outputs_num, **kwargs)
         
-    def evaluate_result(self, *args, **kwargs) -> Any:
-        """
-        Evaluate the result by executing the method with given arguments.
-        """
-        return self.func(self.instance, *args, **kwargs)
+#     def evaluate_result(self, *args, **kwargs) -> Any:
+#         """
+#         Evaluate the result by executing the method with given arguments.
+#         """
+#         return self.func(self.instance, *args, **kwargs)
 
-    def __repr__(self) -> str:
-        """
-        Return a string representation of the MethodTask instance in form
-        TaskMethod<method name> where method name is:
-        - 'ClassName.function_name' in most cases
-        - 'ClassName' if __call__ method is wrapped.
-        Returns:
-            str: The name of the instance and the method.
-        """
-        return f"MethodTask<{self.name}>"
+#     def __repr__(self) -> str:
+#         """
+#         Return a string representation of the MethodTask instance in form
+#         TaskMethod<method name> where method name is:
+#         - 'ClassName.function_name' in most cases
+#         - 'ClassName' if __call__ method is wrapped.
+#         Returns:
+#             str: The name of the instance and the method.
+#         """
+#         return f"MethodTask<{self.name}>"
 
-    def _get_function_name(self):
-        if self.func.__name__ == "__call__":
-            return self.instance.__class__.__name__
-        return f"{self.instance.__class__.__name__}.{self.func.__name__}"
+#     def _get_function_name(self):
+#         if self.func.__name__ == "__call__":
+#             return self.instance.__class__.__name__
+#         return f"{self.instance.__class__.__name__}.{self.func.__name__}"
 
 
 class TaskReference(Task):
@@ -259,7 +241,7 @@ class TaskReference(Task):
             ref_index (int): The index of the output this reference points to.
             name (str): The name of the reference.
         """
-        super().__init__(task.func, *task.args, name=name, outputs_num=1, **task.kwargs)
+        super().__init__(task.func, *task.params.args, name=name, outputs_num=1, **task.params.kwargs)
         self.task: Task = task
         self.ref_index = ref_index
 

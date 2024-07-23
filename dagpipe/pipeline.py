@@ -83,10 +83,19 @@ class Pipeline:
                 return inputs
         raise ValueError(f"Only {parsed_type} type or lists of {parsed_type}s are acceptable. Got {inputs}")
 
-    def to_task(self, *args, **kwargs) -> PipelineTask:
-        """Create task that would execute self.run function with given *args, **kwargs"""
-        pipeline_task = PipelineTask(self.run, *args, name=str(self), **kwargs)
-        pipeline_task.update_args_if_provided(*args, **kwargs)
+    def to_task(self,  *single_input_args, **single_or_multi_input_kwargs) -> PipelineTask:
+        """
+        Create task that would execute self.run function
+        with given *single_input_args, **single_or_multi_input_kwargs.
+        For details how to pass parameters into pipeline, 
+        please refer to run function docstring.
+        """
+        pipeline_task = PipelineTask(
+            self.run, 
+            *single_input_args, 
+            name=str(self), 
+            **single_or_multi_input_kwargs)
+        # pipeline_task.params.update(*args, **kwargs)
         if len(self.outputs) > 1:
             names = [o.name for o in self.outputs]
             pipeline_task.split_output(names)
@@ -158,7 +167,7 @@ class Pipeline:
             current_task = stack.pop()
             if current_task not in seen:
                 seen.add(current_task)
-                for parent in current_task.args + tuple(current_task.kwargs.values()):
+                for parent in current_task.params.args + tuple(current_task.params.kwargs.values()):
                     if isinstance(parent, Task):
                         stack.append(parent)
                         children_num[id(parent)] = children_num.get(id(parent), 0) + 1
@@ -172,7 +181,7 @@ class Pipeline:
             current_task = stack.pop()
             tasks.append(current_task)
             seen.add(current_task)
-            for parent in current_task.args + tuple(current_task.kwargs.values()):
+            for parent in current_task.params.args + tuple(current_task.params.kwargs.values()):
                 if isinstance(parent, Task):
                     children_num[id(parent)] = children_num.get(id(parent), 0) - 1
                     if children_num[id(parent)] == 0: #and (parent not in seen):
@@ -193,7 +202,7 @@ class Pipeline:
                 Keyword arguments to be passed to the initial task.
             The currently stored keyword arguments would be updated.
             When the pipeline has multiple inputs, these keyword arguments 
-            should be in the format {task_name: args_or_kwargs}, where 
+            should be in the format {input_task_name: args_or_kwargs}, where 
             args_or_kwargs can be represented as single value or tuple 
             what would be threated as args, or dictionary that would be 
             threated as kwargs, eventually tuple[tuple, dict] that would 
@@ -220,7 +229,7 @@ class Pipeline:
         if self._have_multi_input:
             self._update_args_for_multi_input(single_or_multi_input_kwargs)
         else:
-            self.inputs[0].update_args_if_provided(
+            self.inputs[0].params.update(
                 *single_input_args, **single_or_multi_input_kwargs)
 
     def _update_args_for_multi_input(self, single_or_multi_input_kwargs: dict):
@@ -229,7 +238,7 @@ class Pipeline:
             if not task in self.inputs:
                 raise ValueError(f"{task} is not in inputs.")
             args, kwargs = self._parse_args_or_kwargs(arg_or_kwarg)
-            task.update_args_if_provided(*args, **kwargs)
+            task.params.update(*args, **kwargs)
 
     @staticmethod
     def _parse_args_or_kwargs(arg_or_kwarg: Any | tuple | dict):
