@@ -13,11 +13,11 @@ Modules:
 """
 
 
-__version__ = "0.2.18"
+__version__ = "0.2.19"
 
 
 
-from dagpipe.task_decorators import task#, method_task
+from dagpipe.task_decorators import task, method_task
 from dagpipe.task_core import StoppingTaskHolder
 from dagpipe.pipeline import Pipeline
 

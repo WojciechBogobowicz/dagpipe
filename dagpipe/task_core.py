@@ -177,50 +177,51 @@ class PipelineTask(Task):
         return "Pipeline" + super().__repr__()
 
 
-# class MethodTask(Task):
-#     """
-#     A class representing a task that involves executing a method on an instance.
+class MethodTask(Task):
+    """
+    A class representing a task that involves executing a method on an instance.
 
-#     Attributes:
-#         instance (Any): The instance on which the method will be executed.
-#     """
+    Attributes:
+        instance (Any): The instance on which the method will be executed.
+    """
 
-#     def __init__(self, instance, func, *args, name="auto", outputs_num=1, **kwargs):
-#         """
-#         Initialize a MethodTask instance.
+    def __init__(self, instance, func, *args, name="auto", outputs_num=1, **kwargs):
+        """
+        Initialize a MethodTask instance.
 
-#         Args:
-#             instance (Any): The instance on which the method will be executed.
-#             func (callable): The method to be executed.
-#             name (str, optional): Name that would be displayed in visualization.
-#             outputs_num (int, optional): Number of of outputs, function returns.
-#             *args: Positional arguments to be passed to the method.
-#             **kwargs: Keyword arguments to be passed to the method.
-#         """
-#         self.instance = instance
-#         super().__init__(func, *args, name=name, outputs_num=outputs_num, **kwargs)
+        Args:
+            instance (Any): The instance on which the method will be executed.
+            func (callable): The method to be executed.
+            name (str, optional): Name that would be displayed in visualization.
+            outputs_num (int, optional): Number of of outputs, function returns.
+            *args: Positional arguments to be passed to the method.
+            **kwargs: Keyword arguments to be passed to the method.
+        """
+        self.instance = instance
+        args = ((instance,) + args)
+        super().__init__(func, *args, name=name, outputs_num=outputs_num, **kwargs)
         
-#     def evaluate_result(self, *args, **kwargs) -> Any:
-#         """
-#         Evaluate the result by executing the method with given arguments.
-#         """
-#         return self.func(self.instance, *args, **kwargs)
+    # def evaluate_result(self, *args, **kwargs) -> Any:
+    #     """
+    #     Evaluate the result by executing the method with given arguments.
+    #     """
+    #     return self.func(self.instance, *args, **kwargs)
 
-#     def __repr__(self) -> str:
-#         """
-#         Return a string representation of the MethodTask instance in form
-#         TaskMethod<method name> where method name is:
-#         - 'ClassName.function_name' in most cases
-#         - 'ClassName' if __call__ method is wrapped.
-#         Returns:
-#             str: The name of the instance and the method.
-#         """
-#         return f"MethodTask<{self.name}>"
+    def __repr__(self) -> str:
+        """
+        Return a string representation of the MethodTask instance in form
+        TaskMethod<method name> where method name is:
+        - 'ClassName.function_name' in most cases
+        - 'ClassName' if __call__ method is wrapped.
+        Returns:
+            str: The name of the instance and the method.
+        """
+        return f"MethodTask<{self.name}>"
 
-#     def _get_function_name(self):
-#         if self.func.__name__ == "__call__":
-#             return self.instance.__class__.__name__
-#         return f"{self.instance.__class__.__name__}.{self.func.__name__}"
+    def _get_function_name(self):
+        if self.func.__name__ == "__call__":
+            return self.instance.__class__.__name__
+        return f"{self.instance.__class__.__name__}.{self.func.__name__}"
 
 
 class TaskReference(Task):
