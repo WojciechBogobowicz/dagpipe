@@ -54,10 +54,13 @@ class Pipeline:
         nested = []
         for task in self.tasks:
             nested.append(task)
+            if isinstance(task, TaskReference):
+                nested.append(task.task)
+                task = task.task
             if isinstance(task, PipelineTask):
                 nested.extend(task.pipeline.nested_tasks)
         return nested
-    
+
     def find(self, task_name: str) -> Task | list[TaskType]:
         """
         Find tasks by name in the pipeline, including tasks from sub-pipelines.
