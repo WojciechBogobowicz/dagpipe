@@ -8,7 +8,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name="dagpipe",
-    version="0.2.17", # remember to change it in init too
+    version="0.2.18", # remember to change it in init too
     author="Wojciech Bogobowicz",
     author_email="wojciech.bogobowicz@gmail.com",
     description="Package that allows user to define lazy evaluated dag pipeline.",

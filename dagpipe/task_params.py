@@ -64,7 +64,8 @@ class TaskParams:
             if param.kind in (inspect.Parameter.VAR_KEYWORD, inspect.Parameter.KEYWORD_ONLY):
                 break
 
-            if arg := self._parameters.get(param_name, None):
+            if param_name in self._parameters:
+                arg = self._parameters[param_name]
                 if param.kind == inspect.Parameter.VAR_POSITIONAL:
                     # print(arg, "<- positional args")
                     args.extend(arg)
@@ -91,7 +92,8 @@ class TaskParams:
             if not kwargs_started:
                 continue
 
-            if arg := self._parameters.get(param_name, None):
+            if param_name in self._parameters:
+                arg = self._parameters[param_name]
                 if param.kind == inspect.Parameter.VAR_KEYWORD:
                     kwargs.update(arg)
                 else:
