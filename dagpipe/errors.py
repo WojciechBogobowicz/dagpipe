@@ -1,6 +1,3 @@
-import inspect
-
-
 class ArgumentError(Exception):
     """Custom exception for argument errors."""
     
