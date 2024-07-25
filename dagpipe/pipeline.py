@@ -98,7 +98,7 @@ class Pipeline:
             *single_input_args, 
             name=str(self), 
             **single_or_multi_input_kwargs)
-        # pipeline_task.params.update(*args, **kwargs)
+        # pipeline_task.update_params(*args, **kwargs)
         if len(self.outputs) > 1:
             names = [o.name for o in self.outputs]
             pipeline_task.split_output(names)
@@ -232,7 +232,7 @@ class Pipeline:
         if self._have_multi_input:
             self._update_args_for_multi_input(single_or_multi_input_kwargs)
         else:
-            self.inputs[0].params.update(
+            self.inputs[0].update_params(
                 *single_input_args, **single_or_multi_input_kwargs)
 
     def _update_args_for_multi_input(self, single_or_multi_input_kwargs: dict):
@@ -241,7 +241,7 @@ class Pipeline:
             if not task in self.inputs:
                 raise ValueError(f"{task} is not in inputs.")
             args, kwargs = self._parse_args_or_kwargs(arg_or_kwarg)
-            task.params.update(*args, **kwargs)
+            task.update_params(*args, **kwargs)
 
     @staticmethod
     def _parse_args_or_kwargs(arg_or_kwarg: Any | tuple | dict):

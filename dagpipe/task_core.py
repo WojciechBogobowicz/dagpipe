@@ -68,13 +68,17 @@ class Task:
         Returns:
             Any: The result of the function execution.
         """
-        self.params.update(*args, **kwargs)
+        self.update_params(*args, **kwargs)
         
         self.evaluated_result = self.evaluate_result(
             *self.params.evaluated_args,
             **self.params.evaluated_kwargs,
         )
         return self.evaluated_result
+    
+    def update_params(self, *args, **kwargs):
+        """Update parameters that will be used when task will run."""
+        self.params.update(*args, **kwargs)
 
     def evaluate_result(self, *args, **kwargs) -> Any:
         """
