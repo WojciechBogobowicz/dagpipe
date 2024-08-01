@@ -12,7 +12,6 @@ from dagpipe.task_core import PipelineTask, Task, TaskReference
 from dagpipe.typing import TaskType
 
 
-
 class Pipeline:
     """
     A class defining order in which tasks should be executed.
@@ -23,7 +22,7 @@ class Pipeline:
         outputs (list[TaskType]): The list of output tasks of the pipeline.
         tasks (list[TaskType]): The list of tasks in the order they should be executed.
     """
-    def __init__(self, 
+    def __init__(self,
                  inputs: Task | list[TaskType],
                  outputs: Task | list[TaskType],
                  conditional_stops: dict[str, Callable[[Any], bool]] = None):
@@ -53,10 +52,12 @@ class Pipeline:
         """
         nested = []
         for task in self.tasks:
-            nested.append(task)
+            if not task in nested:
+                nested.append(task)
             if isinstance(task, TaskReference):
-                nested.append(task.task)
-                task = task.task
+                if not task.task in nested:
+                    nested.append(task.task)
+                    task = task.task
             if isinstance(task, PipelineTask):
                 nested.extend(task.pipeline.nested_tasks)
         return nested
