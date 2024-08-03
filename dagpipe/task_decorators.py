@@ -12,10 +12,10 @@ import functools
 from typing import Any, Callable
 
 from dagpipe.task_core import Task, MethodTask
-# from dagpipe.task_core import Task
+from dagpipe.typing import MethodTaskDecoratorType, TaskDecoratorType
 
 
-def task(name="auto", outputs_num: int = 1) -> Callable[[Callable], Callable[[Any], Task]]:
+def task(func=None, name="auto", outputs_num: int = 1) -> TaskDecoratorType:
     """
     A decorator that wraps a function in a Task instance.
     Task postpone function execution, 
@@ -29,17 +29,27 @@ def task(name="auto", outputs_num: int = 1) -> Callable[[Callable], Callable[[An
         callable: A wrapped function that returns a Task instance.
     """
 
-    def decorator(func):
+    def decorator(func) -> Callable[[Any], Task]:
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> Task:
-            return Task(func, *args, name=name, outputs_num=outputs_num, **kwargs)
+            return Task(
+                func,
+                *args,
+                name=name,
+                outputs_num=outputs_num,
+                **kwargs)
         return wrapper
+
+    if func:
+        return decorator(func)
     return decorator
 
 
-def method_task(func=None, name="auto", outputs_num=1) -> Callable[[Callable], Callable[[Any], MethodTask]]:
+def method_task(method=None, name="auto", outputs_num: int = 1
+                ) -> MethodTaskDecoratorType:
     """
-    Similar to 'task' but works with class method instead of standalone functions. 
+    Similar to 'task' but works with class method
+    instead of standalone functions.
 
     Args:
         name (str, optional): Name used in visualization.
@@ -47,9 +57,18 @@ def method_task(func=None, name="auto", outputs_num=1) -> Callable[[Callable], C
     Returns:
         callable: A wrapped method that returns a MethodTask instance.
     """
-    def decorator(method):
+    def decorator(method) -> Callable[[Any], Task]:
         @functools.wraps(method)
         def wrapper(instance, *args, **kwargs) -> Task:
-            return MethodTask(instance, method, *args, name=name, outputs_num=outputs_num, **kwargs)
+            return MethodTask(
+                instance,
+                method,
+                *args,
+                name=name,
+                outputs_num=outputs_num,
+                **kwargs)
         return wrapper
+
+    if method:
+        return decorator(method)
     return decorator

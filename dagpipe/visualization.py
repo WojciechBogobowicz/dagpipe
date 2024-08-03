@@ -39,14 +39,15 @@ def visualize(pipeline: Pipeline, to_file: str | None = None):
             plt.imshow(img)
             plt.axis("off")
 
-def _build_graph(pipeline : Pipeline):
+
+def _build_graph(pipeline: Pipeline):
     """Builds visualization graf for given pipeline"""
     dot = graphviz.Digraph(strict=False, format='png')
     for task in pipeline.tasks:
         if isinstance(task, TaskReference):
-            task = task.task
+            task = task.linked_task
         label = task.name
-        color="black"
+        color = "black"
         if pipeline.conditional_stops:
             if task.name in pipeline.conditional_stops:
                 stop = pipeline.conditional_stops[task.name]
@@ -57,7 +58,7 @@ def _build_graph(pipeline : Pipeline):
     for task in pipeline.tasks:
         if isinstance(task, Task):
             if isinstance(task, TaskReference):
-                task = task.task
+                task = task.linked_task
             for arg in task.params.args + tuple(task.params.kwargs.values()):
                 if not isinstance(arg, Task):
                     continue
@@ -66,28 +67,28 @@ def _build_graph(pipeline : Pipeline):
                 if (edge, label) not in created_edges:
                     dot.edge(*edge,  **edge_kwargs)
                     created_edges.add((edge, label))
-                    
+
     with dot.subgraph() as s:
         s.attr(rank='same')
         for task in pipeline.inputs:
             s.node(__get_node_name(task))
-            
+
     with dot.subgraph() as s:
         s.attr(rank='same')
         for task in pipeline.outputs:
             s.node(__get_node_name(task))
-        
+
     return dot
 
 
 def __define_edge(task_to: Task, task_from: Task):
     if isinstance(task_from, TaskReference):
-        edge = __get_node_name(task_from.task), __get_node_name(task_to)
+        edge = __get_node_name(task_from.linked_task), __get_node_name(task_to)
         edge_kwargs = dict(label=task_from.name)
-    else: # Normal Task
+    else:  # Normal Task
         edge = __get_node_name(task_from), __get_node_name(task_to)
-        edge_kwargs= dict(color='black')
-    return edge,edge_kwargs
+        edge_kwargs = dict(color='black')
+    return edge, edge_kwargs
 
 
 def __get_node_name(task):
@@ -104,7 +105,6 @@ def __update_node_attrs_for_stop(stop, label):
         stop_name = stop.__name__
     else:
         stop_name = repr(stop)
-    color="red"
+    color = "red"
     label = f"{label}\nstops if\n{stop_name}"
-    return label,color
-
+    return label, color

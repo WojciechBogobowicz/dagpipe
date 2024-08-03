@@ -7,16 +7,14 @@ Classes:
     MethodTask: Similar to task, but works with class methods.
 """
 
-from typing import Any, Iterable, TYPE_CHECKING
+from typing import Any, Iterable, TYPE_CHECKING, Literal
 
+from dagpipe.errors import UndefinedTaskIndexAccessError
 from dagpipe.task_params import TaskParams
 
 
 if TYPE_CHECKING:
     from dagpipe.pipeline import Pipeline
-
-
-
 
 
 class Task:
@@ -35,6 +33,7 @@ class Task:
         references (list): List of TaskReference objects.
 
     """
+
     def __init__(self, func, *args, name="auto", outputs_num=1, **kwargs):
         """
         Initialize a Task instance.
@@ -48,11 +47,10 @@ class Task:
         """
         self.func = func
         self.params = TaskParams(self.func, *args, **kwargs)
-        self.outputs_num=outputs_num
+        self.outputs_num = outputs_num
         self.name = name if name != "auto" else self._get_function_name()
         self.evaluated_result = None
-        self.references = None
-        self._index = 0
+        self._ref_names: str | Literal["auto"] = "auto"
 
     def _get_function_name(self):
         return self.func.__name__
@@ -69,13 +67,13 @@ class Task:
             Any: The result of the function execution.
         """
         self.update_params(*args, **kwargs)
-        
+
         self.evaluated_result = self.evaluate_result(
             *self.params.evaluated_args,
             **self.params.evaluated_kwargs,
         )
         return self.evaluated_result
-    
+
     def update_params(self, *args, **kwargs):
         """Update parameters that will be used when task will run."""
         self.params.update(*args, **kwargs)
@@ -87,35 +85,7 @@ class Task:
         return self.func(*args, **kwargs)
 
     def __iter__(self):
-        """
-        Initialize an iterator for the task's outputs.
-        """
-        if self.references is None:
-            self.references = []
-            for index in range(self.outputs_num):
-                ref_name = f"{self.name}[{index}]"
-                self.references.append(TaskReference(self, index, ref_name))
-        elif len(self.references) < self.outputs_num:
-            for index in range(len(self.references), self.outputs_num):
-                ref_name = f"{self.name}[{index}]"
-                self.references.append(TaskReference(self, index, ref_name))
-        self._index = 0
-        return self
-
-    def __next__(self):
-        """
-        Get the next output reference in the iteration.
-
-        Returns:
-            TaskReference: The next TaskReference object.
-
-        Raises:
-            StopIteration: If there are no more outputs to iterate over.
-        """
-        if self._index == self.outputs_num:
-            raise StopIteration
-        self._index += 1
-        return self.references[self._index-1]
+        return TaskIterator(self)
 
     def set_name(self, name: str | Iterable):
         """
@@ -130,8 +100,7 @@ class Task:
         if isinstance(name, str):
             self.name = name
         else:
-            for ref, name in zip(self, name):
-                ref.name = name
+            self._ref_names = name
         return self
 
     def split_output(self, outputs_names: Iterable[str]):
@@ -150,6 +119,32 @@ class Task:
         """Returns holder for task."""
         return StoppingTaskHolder(self)
 
+    def _get_ref_name(self, ref_idx: int) -> str:
+        self.__assert_ref_name_defined(ref_idx)
+
+        if self._ref_names == "auto":
+            ref_name = f"{self.name}[{ref_idx}]"
+        else:
+            ref_name = self._ref_names[ref_idx]
+        return ref_name
+
+    def __assert_ref_name_defined(self, ref_idx):
+        idx_is_undefined = False
+        if self._ref_names != "auto":
+            if ref_idx >= len(self._ref_names):
+                idx_is_undefined = True
+        else:
+            if ref_idx >= self.outputs_num:
+                idx_is_undefined = True
+
+        if idx_is_undefined:
+            raise UndefinedTaskIndexAccessError(
+                f"You are trying to access {ref_idx} element "
+                f"of the {repr(self)} output. "
+                f"But task have declared only {self.outputs_num} elements. "
+                "If you need to split output for more elements, "
+                "please use .split_output() or .set_outputs_num() function.")
+
     def __repr__(self) -> str:
         """
         Return a string representation of the Task instance.
@@ -160,12 +155,6 @@ class Task:
         return f"Task<{self.name}>"
 
 
-# class TaskIterator:
-#     def __init__(self, task: Task) -> None:
-#         self._task = task
-#         self.ran_refs = None
-        
-
 class PipelineTask(Task):
     """
     A class that wraps Pipeline into Task.
@@ -173,6 +162,7 @@ class PipelineTask(Task):
     Attributes:
         pipeline (dagpipe.Pipeline): The instance of pipeline that .
     """
+
     def __init__(self, func, *args, name="auto", outputs_num=1, **kwargs):
         super().__init__(func, *args, name=name, outputs_num=outputs_num, **kwargs)
         self.pipeline: Pipeline = func.__self__
@@ -203,13 +193,8 @@ class MethodTask(Task):
         """
         self.instance = instance
         args = ((instance,) + args)
-        super().__init__(func, *args, name=name, outputs_num=outputs_num, **kwargs)
-        
-    # def evaluate_result(self, *args, **kwargs) -> Any:
-    #     """
-    #     Evaluate the result by executing the method with given arguments.
-    #     """
-    #     return self.func(self.instance, *args, **kwargs)
+        super().__init__(
+            func, *args, name=name, outputs_num=outputs_num, **kwargs)
 
     def __repr__(self) -> str:
         """
@@ -228,6 +213,63 @@ class MethodTask(Task):
         return f"{self.instance.__class__.__name__}.{self.func.__name__}"
 
 
+class TaskIterator:
+    """Creates references to task 
+    that are pointing to specific elements from this task."""
+
+    def __init__(self, task: Task) -> None:
+        self._task = task
+        self._ran_refs = []
+        self._references = []
+        self._index = 0
+        self._outputs_num = self._task.outputs_num
+        self.task_name = self._task.name
+
+        for index in range(self._outputs_num):
+            ref_name = self._task._get_ref_name(index)
+            self._references.append(TaskReference(self, index, ref_name))
+
+    def none_refs_ran(self) -> bool:
+        """Checks if any of references ran."""
+        return self._ran_refs == []
+
+    def reset_ran_refs(self) -> None:
+        """Forgets all tracked references."""
+        self._ran_refs = []
+
+    def register_ran_ref(self, new_ref: 'TaskReference') -> None:
+        """Tracks new reference."""
+        self._ran_refs.append(new_ref)
+
+    def ref_already_ran(self, ref: 'TaskReference') -> bool:
+        """Checks if given reference was ran already."""
+        return ref in self._ran_refs
+
+    def __iter__(self) -> 'TaskIterator':
+        """Return self for iterating over."""
+        return self
+
+    def __next__(self):
+        """
+        Get the next output reference in the iteration.
+
+        Returns:
+            TaskReference: The next TaskReference object.
+
+        Raises:
+            StopIteration: If there are no more outputs to iterate over.
+        """
+        if self._index == self._outputs_num:
+            raise StopIteration
+        self._index += 1
+        return self._references[self._index-1]
+
+    @property
+    def task(self) -> Task:
+        """Return the task that is being iterated over."""
+        return self._task
+
+
 class TaskReference(Task):
     """
     A class representing a reference to a specific output of a Task.
@@ -236,18 +278,27 @@ class TaskReference(Task):
         task (Task): The original task this reference points to.
         ref_index (int): The index of the output this reference points to.
     """
-    def __init__(self, task: Task, ref_index: int, name: str):
+
+    def __init__(self, task_iterator: TaskIterator, ref_index: int, name: str):
         """
         Initialize a TaskReference instance.
 
         Args:
-            task (Task): The original task this reference points to.
+            task_iterator (TaskIterator): Iterator from task this reference points to.
             ref_index (int): The index of the output this reference points to.
             name (str): The name of the reference.
         """
-        super().__init__(task.func, *task.params.args, name=name, outputs_num=1, **task.params.kwargs)
-        self.task: Task = task
-        self.ref_index = ref_index
+        task = task_iterator.task
+        super().__init__(task.func, *task.params.args,
+                         name=name, outputs_num=1, **task.params.kwargs)
+        self._task: Task = task
+        self.task_iterator: TaskIterator = task_iterator
+        self.ref_index: int = ref_index
+
+    @property
+    def linked_task(self):
+        """Task that TaskReference is pointing to."""
+        return self._task
 
     def run(self, *args, **kwargs) -> Any:
         """
@@ -260,26 +311,27 @@ class TaskReference(Task):
         Returns:
             Any: The result of the function execution.
         """
-        if self._all_refs_ran() or (not self.task.evaluated_result):
-            self.task.run(*args, **kwargs)
-        self.evaluated_result = self.task.evaluated_result[self.ref_index]
+        if self._update_refs_and_check_if_all_ran():  # or (not self._task.evaluated_result):
+            self._task.run(*args, **kwargs)
+        self.evaluated_result = self._task.evaluated_result[self.ref_index]
         return self.evaluated_result
 
-    def _all_refs_ran(self) -> bool:
+    def _update_refs_and_check_if_all_ran(self) -> bool:
         """
         Check if all references have run and update the reference tracking.
 
         Returns:
             bool: True if all references have run, False otherwise.
         """
-        if not hasattr(self.task, "ran_refs"):
-            self.task.ran_refs = [self]
+        if self.task_iterator.none_refs_ran():
+            self.task_iterator.register_ran_ref(self)
             return True
-        if self in self.task.ran_refs:
-            self.task.ran_refs = [self]
+        if self.task_iterator.ref_already_ran(self):
+            self.task_iterator.reset_ran_refs()
+            self.task_iterator.register_ran_ref(self)
             return True
         else:
-            self.task.ran_refs.append(self)
+            self.task_iterator.register_ran_ref(self)
             return False
 
     def __repr__(self) -> str:
@@ -296,6 +348,7 @@ class StoppingTaskHolder:
     Attributes:
         task (Task): The task that is being held and marked as stopped.
     """
+
     def __init__(self, task: Task):
         """
         Initialize a StoppingTaskHolder instance.
@@ -304,12 +357,20 @@ class StoppingTaskHolder:
             task (Task): The task to be held and marked as stopped.
         """
         self.task = task
-    
+
     @classmethod
-    def in_(self, collection: Iterable):
-        return any([isinstance(elem, StoppingTaskHolder) for elem in collection])
+    def is_in(cls, collection: Iterable):
+        """
+        Check if any element in the given collection is an instance of StoppingTaskHolder.
+
+        Args:
+            collection (Iterable): The collection to be checked.
+
+        Returns:
+            bool: True if at least one element in the collection is a StoppingTaskHolder instance, False otherwise.
+        """
+        return any(
+            [isinstance(elem, StoppingTaskHolder) for elem in collection])
 
     def __repr__(self) -> str:
         return "STOPPED AT " + self.task.__repr__()
-
-

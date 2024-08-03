@@ -1,11 +1,10 @@
 import inspect
-import importlib
-from typing import Callable, Union
+from typing import Callable
 
-    
 
 class TaskParams:
     """A class that manages and processes the parameters of a task function."""
+
     def __init__(self, func: Callable, *init_args, **init_kwargs) -> None:
         """
         Initialize a TaskParams instance.
@@ -16,24 +15,23 @@ class TaskParams:
             **init_kwargs: Initial keyword arguments for the function.
         """
         from dagpipe.typing import TaskType
-        self.__task_type = TaskType #getattr(importlib.import_module('dagpipe.typing'), 'TaskType')
-        
+        self.__task_type = TaskType
+
         self._sig = inspect.signature(func)
         self._parameters = self._sig.bind(*init_args, **init_kwargs).arguments
         self._task_params_names = self._filter_tasks_from_parameters()
 
-        self._varargs_name = self._find_param_name(inspect.Parameter.VAR_POSITIONAL)
-        self._varkwargs_name = self._find_param_name(inspect.Parameter.VAR_KEYWORD)
+        self._varargs_name = self._find_param_name(
+            inspect.Parameter.VAR_POSITIONAL)
+        self._varkwargs_name = self._find_param_name(
+            inspect.Parameter.VAR_KEYWORD)
 
         self._all_varargs_are_tasks = self._are_all_varargs_tasks()
         self._tasks_in_varkwargs = self._get_tasks_from_varkwargs()
 
-    
     @property
     def evaluated_args(self) -> tuple:
         """Get the evaluated positional arguments, resolving tasks to their results."""
-        # print(self.args, "<- inside evaluated_args")
-        # print(tuple(a.evaluated_result if isinstance(a, self.__task_type) else a for a in self.args), "<- after evaluation")
         args = []
         args = self.__get_evaluated_results(args)
         return tuple(args)
@@ -42,16 +40,14 @@ class TaskParams:
         for arg in self.args:
             if isinstance(arg, self.__task_type):
                 args.append(arg.evaluated_result)
-            # elif isinstance(arg, Union[list, tuple, set, frozenset]):
-            #     args.append(self.__get_evaluated_results(arg))
             else:
                 args.append(arg)
         return args
-        
+
     @property
     def evaluated_kwargs(self) -> dict:
         """Get the evaluated keyword arguments, resolving tasks to their results."""
-        return {k: v.evaluated_result 
+        return {k: v.evaluated_result
                 if isinstance(v, self.__task_type) else v
                 for k, v
                 in self.kwargs.items()}
@@ -67,12 +63,9 @@ class TaskParams:
             if param_name in self._parameters:
                 arg = self._parameters[param_name]
                 if param.kind == inspect.Parameter.VAR_POSITIONAL:
-                    # print(arg, "<- positional args")
                     args.extend(arg)
                 else:
-                    # print(arg, "<- not positional args")
                     args.append(arg)
-        # print(args, "<- args from property")
         return tuple(args)
 
     @property
@@ -111,7 +104,8 @@ class TaskParams:
         """
         new_arguments = self._sig.bind_partial(*args, **kwargs).arguments
         self.__assert_tasks_are_not_overwritten(new_arguments)
-        new_arguments = self.__update_varkwargs_with_varkwargs_tasks(new_arguments)
+        new_arguments = self.__update_varkwargs_with_varkwargs_tasks(
+            new_arguments)
         for arg_name, value in new_arguments.items():
             self._parameters[arg_name] = value
 
@@ -126,7 +120,7 @@ class TaskParams:
                 raise TypeError(f"Tried to overwrite {self._parameters[name]}"
                                 f" with {new_arguments[name]}"
                                 f" in parameter {name}."
-                                " Task overwriting is not allowed.")   
+                                " Task overwriting is not allowed.")
 
     def __assert_tasks_are_not_overwritten_in_varkwargs(self, new_arguments: dict):
         if self._varkwargs_name:
@@ -136,21 +130,27 @@ class TaskParams:
                         raise TypeError(f"Tried to overwrite {self._parameters[name]}"
                                         f" with {new_arguments[name]}"
                                         f" in parameter {name}."
-                                        " Task overwriting is not allowed.")        
+                                        " Task overwriting is not allowed.")
 
     def __assert_tasks_are_not_overwritten_in_varargs(self, new_arguments: dict):
         if self._all_varargs_are_tasks:
             if new_arguments.get(self._varargs_name, None):
                 raise TypeError("Overwriting varargs, is not allowed"
-                                    " when varargs are tasks.")
+                                " when varargs are tasks.")
 
     def __update_varkwargs_with_varkwargs_tasks(self, new_arguments: dict):
         if self._varkwargs_name in new_arguments:
-            new_arguments[self._varkwargs_name].update(self._tasks_in_varkwargs)
+            new_arguments[self._varkwargs_name].update(
+                self._tasks_in_varkwargs)
         return new_arguments
 
     def _filter_tasks_from_parameters(self):
-        return [name for name, param in self._parameters.items() if isinstance(param, self.__task_type)]
+        return [
+            name
+            for name, param
+            in self._parameters.items()
+            if isinstance(param, self.__task_type)
+        ]
 
     def _are_all_varargs_tasks(self) -> bool:
         if varargs := self._parameters.get(self._varargs_name, None):
@@ -161,7 +161,8 @@ class TaskParams:
 
     def __assert_all_varargs_are_tasks(self, varargs):
         if not all(isinstance(arg, self.__task_type) for arg in varargs):
-            raise ValueError("Either all or none varargs needs to be a TaskType.")
+            raise ValueError(
+                "Either all or none varargs needs to be a TaskType.")
 
     def _find_param_name(self, kind):
         for name, param in self._sig.parameters.items():
@@ -171,5 +172,10 @@ class TaskParams:
 
     def _get_tasks_from_varkwargs(self) -> dict:
         if varkwargs := self._parameters.get(self._varkwargs_name, None):
-            return {k: v for k, v in varkwargs.items() if isinstance(v, self.__task_type)}
+            return {
+                k: v
+                for k, v
+                in varkwargs.items()
+                if isinstance(v, self.__task_type)
+            }
         return {}

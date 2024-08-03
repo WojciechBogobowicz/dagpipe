@@ -22,6 +22,7 @@ class Pipeline:
         outputs (list[TaskType]): The list of output tasks of the pipeline.
         tasks (list[TaskType]): The list of tasks in the order they should be executed.
     """
+
     def __init__(self,
                  inputs: Task | list[TaskType],
                  outputs: Task | list[TaskType],
@@ -41,7 +42,7 @@ class Pipeline:
         self.tasks: list[TaskType] = self._gather_tasks()
         self.conditional_stops = conditional_stops
         self._have_multi_input = (len(self.inputs) > 1)
-        
+
     @property
     def nested_tasks(self) -> list[TaskType]:
         """
@@ -52,12 +53,12 @@ class Pipeline:
         """
         nested = []
         for task in self.tasks:
-            if not task in nested:
+            if task not in nested:
                 nested.append(task)
             if isinstance(task, TaskReference):
-                if not task.task in nested:
-                    nested.append(task.task)
-                    task = task.task
+                if task.linked_task not in nested:
+                    nested.append(task.linked_task)
+                    task = task.linked_task
             if isinstance(task, PipelineTask):
                 nested.extend(task.pipeline.nested_tasks)
         return nested
@@ -73,7 +74,8 @@ class Pipeline:
             Task | list[TaskType]: A single Task if exactly one is found, otherwise a list of matching tasks.
         """
         task_name = self.__strip_task_name_if_needed(task_name)
-        return_tasks = list(filter(lambda t: t.name == task_name, self.nested_tasks))
+        return_tasks = list(
+            filter(lambda t: t.name == task_name, self.nested_tasks))
         if len(return_tasks) == 1:
             return return_tasks[0]
         return return_tasks
@@ -85,7 +87,8 @@ class Pipeline:
         if isinstance(inputs, list):
             if all(isinstance(t, parsed_type) for t in inputs):
                 return inputs
-        raise ValueError(f"Only {parsed_type} type or lists of {parsed_type}s are acceptable. Got {inputs}")
+        raise ValueError(
+            f"Only {parsed_type} type or lists of {parsed_type}s are acceptable. Got {inputs}")
 
     def to_task(self,  *single_input_args, **single_or_multi_input_kwargs) -> PipelineTask:
         """
@@ -95,22 +98,22 @@ class Pipeline:
         please refer to run function docstring.
         """
         pipeline_task = PipelineTask(
-            self.run, 
-            *single_input_args, 
-            name=str(self), 
+            self.run,
+            *single_input_args,
+            name=str(self),
             **single_or_multi_input_kwargs)
         # pipeline_task.update_params(*args, **kwargs)
         if len(self.outputs) > 1:
             names = [o.name for o in self.outputs]
             pipeline_task.split_output(names)
         return pipeline_task
-    
+
     @classmethod
     def sequential(
-            cls,
-            tasks_sequence: Iterable,
-            conditional_stops: dict[str, Callable[[Any], bool]] = None,
-        ):
+        cls,
+        tasks_sequence: Iterable,
+        conditional_stops: dict[str, Callable[[Any], bool]] = None,
+    ):
         """
         Create a Pipeline instance where tasks are executed sequentially.
 
@@ -130,7 +133,8 @@ class Pipeline:
 
     def __getitem__(self, name: str) -> TaskType:
         name = self.__strip_task_name_if_needed(name)
-        tasks_from_references = [t.task for t in self.tasks if isinstance(t, TaskReference)]
+        tasks_from_references = [
+            t.linked_task for t in self.tasks if isinstance(t, TaskReference)]
         for task in self.tasks + tasks_from_references:
             if task.name == name:
                 return task
@@ -159,10 +163,10 @@ class Pipeline:
             if not input_ in tasks:
                 raise RuntimeError(
                     "Unable to build graph. "
-                   f"No connection between {input_} and {self.outputs} found. "
+                    f"No connection between {input_} and {self.outputs} found. "
                     "Verify if pipeline is builded correctly."
                 )
-        
+
     def __count_tasks_children(self):
         children_num = dict()
         seen = set()
@@ -174,9 +178,10 @@ class Pipeline:
                 for parent in current_task.params.args + tuple(current_task.params.kwargs.values()):
                     if isinstance(parent, Task):
                         stack.append(parent)
-                        children_num[id(parent)] = children_num.get(id(parent), 0) + 1
+                        children_num[id(parent)] = children_num.get(
+                            id(parent), 0) + 1
         return children_num
-    
+
     def __order_tasks(self, children_num):
         tasks = []
         seen = set(self.outputs)
@@ -187,8 +192,10 @@ class Pipeline:
             seen.add(current_task)
             for parent in current_task.params.args + tuple(current_task.params.kwargs.values()):
                 if isinstance(parent, Task):
-                    children_num[id(parent)] = children_num.get(id(parent), 0) - 1
-                    if children_num[id(parent)] == 0: #and (parent not in seen):
+                    children_num[id(parent)] = children_num.get(
+                        id(parent), 0) - 1
+                    # and (parent not in seen):
+                    if children_num[id(parent)] == 0:
                         stack.append(parent)
                         seen.add(parent)
         tasks.reverse()
@@ -223,7 +230,7 @@ class Pipeline:
                     if self.conditional_stops[task.name](task.evaluated_result):
                         return [task.to_stopping_holder() for _ in self.outputs]
                 if isinstance(task, TaskReference):
-                    og_task = task.task
+                    og_task = task.linked_task
                     if og_task.name in self.conditional_stops:
                         if self.conditional_stops[og_task.name](og_task.evaluated_result):
                             return [og_task.to_stopping_holder() for _ in self.outputs]
@@ -248,7 +255,7 @@ class Pipeline:
     def _parse_args_or_kwargs(arg_or_kwarg: Any | tuple | dict):
         if isinstance(arg_or_kwarg, tuple):
             if (
-                (len(arg_or_kwarg) == 2) 
+                (len(arg_or_kwarg) == 2)
                 and isinstance(arg_or_kwarg[0], tuple)
                 and isinstance(arg_or_kwarg[1], dict)
             ):
@@ -260,7 +267,7 @@ class Pipeline:
         else:
             args_, kwargs_ = (arg_or_kwarg, ), {}
         return args_, kwargs_
-    
+
     def with_outputs(self, outputs_names: str | list[str]):
         """Create new pipeline with inputs and conditional stops from self.
 
@@ -273,7 +280,7 @@ class Pipeline:
         """
         outputs_names = self._uniform_to_list(outputs_names, str)
         outputs = [self[name] for name in outputs_names]
-        
+
         return Pipeline(self.inputs, outputs, self.conditional_stops)
 
     def __repr__(self) -> str:

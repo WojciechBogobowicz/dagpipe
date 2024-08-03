@@ -1,8 +1,12 @@
-from typing import Union
+from typing import Any, Callable, Union
 
-from dagpipe.task_core import PipelineTask, Task, TaskReference
-# from dagpipe.task_core import MethodTask, PipelineTask, Task, TaskReference
+from dagpipe.task_core import MethodTask, PipelineTask, Task, TaskReference
 
 
-# TaskType = Union[Task, TaskReference, MethodTask, PipelineTask]
-TaskType = Union[Task, TaskReference, PipelineTask]
+TaskType = Union[Task, TaskReference, MethodTask, PipelineTask]
+
+TaskDecoratorType = (Callable[[Callable], Callable[[Any], Task]]
+                     | Callable[[Any], Task])
+
+MethodTaskDecoratorType = (Callable[[Callable], Callable[[Any], MethodTask]]
+                           | Callable[[Any], MethodTask])
