@@ -1,8 +1,9 @@
+from copy import deepcopy
 import unittest
 
 
 import dagpipe
-from tests.tasks_setup import (
+from tests_.tasks_setup import (
     SelfExecutionsCounter,
     add_1,
     append_a,
@@ -68,53 +69,66 @@ class PipelineRunTest(unittest.TestCase):
             dagpipe.Pipeline(inp, [out1, out2])
         )
 
+        # nested straight pipeline inner in beginning
+        (inp,) = deepcopy(self.simple_pipeline_sequential).to_task("inp")
+        out = add_1(inp)
+        self.simple_beginning_nested_pipeline = dagpipe.Pipeline(inp, out)
+
     def test_simple_pipeline(self):
         """run simple_pipeline twice and checks output"""
         out1 = self.simple_pipeline.run(0)
         out2 = self.simple_pipeline.run(10)
 
-        self.assertEqual(out1, [3])
-        self.assertEqual(out2, [13])
+        self.assertEqual(out1, [3], "First run failed.")
+        self.assertEqual(out2, [13], "Second run failed.")
+
+    def test_simple_beginning_nested_pipeline(self):
+        """run simple_beginning_nested_pipeline twice and checks output"""
+        out1 = self.simple_beginning_nested_pipeline.run(0)
+        out2 = self.simple_beginning_nested_pipeline.run(10)
+
+        self.assertEqual(out1, [4], "First run failed.")
+        self.assertEqual(out2, [14], "Second run failed.")
 
     def test_simple_sequential_pipeline(self):
         """run simple_pipeline_sequential twice and checks output"""
         out1 = self.simple_pipeline_sequential.run(0)
         out2 = self.simple_pipeline_sequential.run(10)
 
-        self.assertEqual(out1, [3])
-        self.assertEqual(out2, [13])
+        self.assertEqual(out1, [3], "First run failed.")
+        self.assertEqual(out2, [13], "Second run failed.")
 
     def test_middle_split_pipeline(self):
         """run middle_split_pipeline twice and checks output"""
         out1 = self.middle_split_pipeline.run("x")
         out2 = self.middle_split_pipeline.run("y")
 
-        self.assertEqual(out1, [["x", "b"], ["a", "c"]])
-        self.assertEqual(out2, [["y", "b"], ["a", "c"]])
+        self.assertEqual(out1, [["x", "b"], ["a", "c"]], "First run failed.")
+        self.assertEqual(out2, [["y", "b"], ["a", "c"]], "Second run failed.")
 
     def test_end_split_pipeline(self):
         """run end_split_pipeline twice and checks output"""
         out1 = self.end_split_pipeline.run("x")
         out2 = self.end_split_pipeline.run("y")
 
-        self.assertEqual(out1, ["x", "a"])
-        self.assertEqual(out2, ["y", "a"])
+        self.assertEqual(out1, ["x", "a"], "First run failed.")
+        self.assertEqual(out2, ["y", "a"], "Second run failed.")
 
     def test_asymmetric_split_pipeline(self):
         """run asymmetric_split_pipeline twice and checks output"""
         out1 = self.asymmetric_split_pipeline.run("x")
         out2 = self.asymmetric_split_pipeline.run("y")
 
-        self.assertEqual(out1, ["x", "a"])
-        self.assertEqual(out2, ["y", "a"])
+        self.assertEqual(out1, ["x", "a"], "First run failed.")
+        self.assertEqual(out2, ["y", "a"], "Second run failed.")
 
     def test_two_inputs_pipeline(self):
         """run two inputs pipeline twice and checks output"""
         out1 = self.two_inputs_pipeline.run(inp1="x", inp2="y")
         out2 = self.two_inputs_pipeline.run(inp1="x2", inp2="y2")
 
-        self.assertEqual(out1, [("x", "y")])
-        self.assertEqual(out2, [("x2", "y2")])
+        self.assertEqual(out1, [("x", "y")], "First run failed.")
+        self.assertEqual(out2, [("x2", "y2")], "Second run failed.")
 
     def test_pipeline_with_execution_counter(self):
         """run two inputs pipeline twice and checks output"""
@@ -123,11 +137,11 @@ class PipelineRunTest(unittest.TestCase):
             self.executions_counter.do_nothing_counter, 1,
             "TaskReferences ran task that they point to, "
             "too many/not enough times.")
-        self.assertEqual(out1, [(1, 2, 3), 4])
+        self.assertEqual(out1, [(1, 2, 3), 4], "First run failed.")
 
         out2 = self.pipeline_with_execution_counter.run((10, 20, 30, 40))
         self.assertEqual(
             self.executions_counter.do_nothing_counter, 2,
             "TaskReferences ran task that they point to, "
             "too many/not enough times.")
-        self.assertEqual(out2, [(10, 20, 30), 40])
+        self.assertEqual(out2, [(10, 20, 30), 40], "Second run failed.")
