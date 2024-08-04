@@ -59,10 +59,8 @@ def _build_graph(pipeline: Pipeline):
         if isinstance(task, Task):
             if isinstance(task, TaskReference):
                 task = task.linked_task
-            for arg in task.params.args + tuple(task.params.kwargs.values()):
-                if not isinstance(arg, Task):
-                    continue
-                edge, edge_kwargs = __define_edge(task, arg)
+            for parent in task.input_tasks:
+                edge, edge_kwargs = __define_edge(task, parent)
                 label = edge_kwargs.get("label", None)
                 if (edge, label) not in created_edges:
                     dot.edge(*edge,  **edge_kwargs)

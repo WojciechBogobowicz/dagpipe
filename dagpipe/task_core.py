@@ -15,6 +15,7 @@ from dagpipe.task_params import TaskParams
 
 if TYPE_CHECKING:
     from dagpipe.pipeline import Pipeline
+    # from dagpipe.typing import TaskType
 
 
 class Task:
@@ -46,11 +47,23 @@ class Task:
             **kwargs: Keyword arguments to be passed to the function.
         """
         self.func = func
-        self.params = TaskParams(self.func, *args, **kwargs)
+        self._params = TaskParams(self.func, *args, **kwargs)
         self.outputs_num = outputs_num
         self.name = name if name != "auto" else self._get_function_name()
         self.evaluated_result = None
         self._ref_names: str | Literal["auto"] = "auto"
+
+    @property
+    def evaluated_args(self) -> tuple:
+        return self._params.evaluated_args
+
+    @property
+    def evaluated_kwargs(self) -> dict:
+        return self._params.evaluated_kwargs
+
+    @property
+    def input_tasks(self) -> list["Task"]:
+        return self._params.input_tasks
 
     def _get_function_name(self):
         return self.func.__name__
@@ -69,14 +82,14 @@ class Task:
         self.update_params(*args, **kwargs)
 
         self.evaluated_result = self.evaluate_result(
-            *self.params.evaluated_args,
-            **self.params.evaluated_kwargs,
+            *self._params.evaluated_args,
+            **self._params.evaluated_kwargs,
         )
         return self.evaluated_result
 
     def update_params(self, *args, **kwargs):
         """Update parameters that will be used when task will run."""
-        self.params.update(*args, **kwargs)
+        self._params.update(*args, **kwargs)
 
     def evaluate_result(self, *args, **kwargs) -> Any:
         """
@@ -214,8 +227,8 @@ class MethodTask(Task):
 
 
 class TaskIterator:
-    """Creates references to task 
-    that are pointing to specific elements from this task."""
+    """Creates references to task
+     that are pointing to specific elements from this task."""
 
     def __init__(self, task: Task) -> None:
         self._task = task
@@ -289,11 +302,16 @@ class TaskReference(Task):
             name (str): The name of the reference.
         """
         task = task_iterator.task
-        super().__init__(task.func, *task.params.args,
-                         name=name, outputs_num=1, **task.params.kwargs)
+        super().__init__(task.func, *task._params.args,
+                         name=name, outputs_num=1, **task._params.kwargs)
         self._task: Task = task
         self.task_iterator: TaskIterator = task_iterator
         self.ref_index: int = ref_index
+
+    def update_params(self, *args, **kwargs):
+        """Update parameters for self and task that reference is pointing to."""
+        self.linked_task.update_params(*args, **kwargs)
+        self._params.update(*args, **kwargs)
 
     @property
     def linked_task(self):
@@ -367,7 +385,8 @@ class StoppingTaskHolder:
             collection (Iterable): The collection to be checked.
 
         Returns:
-            bool: True if at least one element in the collection is a StoppingTaskHolder instance, False otherwise.
+            bool: True if at least one element in the collection is a StoppingTaskHolder instance,
+                  False otherwise.
         """
         return any(
             [isinstance(elem, StoppingTaskHolder) for elem in collection])

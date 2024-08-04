@@ -28,7 +28,14 @@ class TaskParams:
 
         self._all_varargs_are_tasks = self._are_all_varargs_tasks()
         self._tasks_in_varkwargs = self._get_tasks_from_varkwargs()
-
+    
+    @property
+    def input_tasks(self):
+        """Get Tasks filtered from args and kwargs."""
+        args_tasks = [t for t in self.args if isinstance(t, self.__task_type)]
+        kwargs_tasks = [t for t in self.kwargs.values() if isinstance(t, self.__task_type)]
+        return args_tasks + kwargs_tasks
+    
     @property
     def evaluated_args(self) -> tuple:
         """Get the evaluated positional arguments, resolving tasks to their results."""

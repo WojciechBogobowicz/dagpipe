@@ -49,7 +49,8 @@ class Pipeline:
         Get all tasks in the pipeline, including nested tasks from any PipelineTask instances.
 
         Returns:
-            list[TaskType]: A list of all tasks in the pipeline, including nested tasks in execution order.
+            list[TaskType]: A list of all tasks in the pipeline,
+                            including nested tasks in execution order.
         """
         nested = []
         for task in self.tasks:
@@ -71,7 +72,8 @@ class Pipeline:
             task_name (str): The name of the task(s) to find.
 
         Returns:
-            Task | list[TaskType]: A single Task if exactly one is found, otherwise a list of matching tasks.
+            Task | list[TaskType]: A single Task if exactly one is found,
+                                   otherwise a list of matching tasks.
         """
         task_name = self.__strip_task_name_if_needed(task_name)
         return_tasks = list(
@@ -175,7 +177,7 @@ class Pipeline:
             current_task = stack.pop()
             if current_task not in seen:
                 seen.add(current_task)
-                for parent in current_task.params.args + tuple(current_task.params.kwargs.values()):
+                for parent in current_task.input_tasks:
                     if isinstance(parent, Task):
                         stack.append(parent)
                         children_num[id(parent)] = children_num.get(
@@ -190,7 +192,7 @@ class Pipeline:
             current_task = stack.pop()
             tasks.append(current_task)
             seen.add(current_task)
-            for parent in current_task.params.args + tuple(current_task.params.kwargs.values()):
+            for parent in current_task.input_tasks:
                 if isinstance(parent, Task):
                     children_num[id(parent)] = children_num.get(
                         id(parent), 0) - 1
@@ -246,7 +248,7 @@ class Pipeline:
     def _update_args_for_multi_input(self, single_or_multi_input_kwargs: dict):
         for task_name, arg_or_kwarg in single_or_multi_input_kwargs.items():
             task = self[task_name]
-            if not task in self.inputs:
+            if task not in self.inputs:
                 raise ValueError(f"{task} is not in inputs.")
             args, kwargs = self._parse_args_or_kwargs(arg_or_kwarg)
             task.update_params(*args, **kwargs)
