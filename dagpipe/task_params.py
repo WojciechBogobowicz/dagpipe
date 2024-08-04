@@ -179,3 +179,6 @@ class TaskParams:
                 if isinstance(v, self.__task_type)
             }
         return {}
+    
+    def __repr__(self) -> str:
+        return f"TaskParams<args: {self.args}, kwargs: {self.kwargs}>"
